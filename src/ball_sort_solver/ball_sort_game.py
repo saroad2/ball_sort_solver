@@ -77,6 +77,11 @@ class BallSortGame:
                 if remaining_balls[ball_color] == 0:
                     del remaining_balls[ball_color]
 
+    def reset(self):
+        for stack in self.stacks:
+            stack.clear()
+        self.fill_stacks()
+
     def __repr__(self):
         repr_string = f"Score: {self.score}\n"
         repr_string += "\n".join(f"\t{list(stack)}" for stack in self.stacks)
