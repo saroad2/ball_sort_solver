@@ -22,8 +22,29 @@ class BallSortGame:
     def stacks_number(self):
         return len(self.stacks)
 
+    @property
+    def score(self):
+        return len(
+            [
+                i for i in range(self.stacks_number)
+                if self.stack_completed(i)
+             ]
+        )
+
+    @property
+    def won(self):
+        return self.score == self.balls_colors_number
+
     def stack_size(self, stack_index):
         return len(self.stacks[stack_index])
+
+    def stack_completed(self, stack_index):
+        if self.stack_size(stack_index) != self.stack_capacity:
+            return False
+        return all(
+            self.stacks[stack_index][i] == self.stacks[stack_index][0]
+            for i in range(self.stack_capacity)
+        )
 
     def top_ball(self, stack_index):
         if self.stack_size(stack_index) == 0:
@@ -57,4 +78,6 @@ class BallSortGame:
                     del remaining_balls[ball_color]
 
     def __repr__(self):
-        return "\n".join(str(stack) for stack in self.stacks)
+        repr_string = f"Score: {self.score}\n"
+        repr_string += "\n".join(f"\t{list(stack)}" for stack in self.stacks)
+        return repr_string

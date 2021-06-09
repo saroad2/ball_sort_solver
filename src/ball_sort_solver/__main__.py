@@ -28,7 +28,7 @@ def play_ball_sort(configuration):
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
     game = BallSortGame(**config_dict)
-    while True:
+    while not game.won:
         click.echo(game)
         from_index = click.prompt("From index", type=int)
         to_index = click.prompt("To index", type=int)
@@ -36,6 +36,7 @@ def play_ball_sort(configuration):
             game.move(from_index, to_index)
         except IllegalMove as e:
             click.echo(f"You tried to make an illegal move: {e}")
+    click.echo("Game won!")
 
 
 if __name__ == '__main__':
