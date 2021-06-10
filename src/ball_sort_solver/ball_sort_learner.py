@@ -92,6 +92,12 @@ class BallSortLearner:
     def recent_score_mean(self, window):
         return self.recent_field_mean(field="score", window=window)
 
+    def recent_actor_loss_mean(self, window):
+        return self.recent_field_mean(field="actor_loss", window=window)
+
+    def recent_critic_loss_mean(self, window):
+        return self.recent_field_mean(field="critic_loss", window=window)
+
     def recent_field_mean(self, field, window):
         field_values = [
             history_point[field] for history_point in self.train_history
@@ -131,11 +137,14 @@ class BallSortLearner:
         self.actor_optimizer.apply_gradients(
             zip(actor_grad, self.actor.trainable_variables)
         )
+        return actor_loss, critic_loss
 
     def run_episode(self):
         self.game.reset()
         episodic_reward = 0
         count = 0
+        actor_losses = []
+        critic_losses = []
 
         while True:
             count += 1
@@ -145,7 +154,10 @@ class BallSortLearner:
             self.record(prev_state, action, reward, current_state)
             episodic_reward += reward
 
-            self.learn()
+            actor_loss, critic_loss = self.learn()
+            actor_losses.append(actor_loss)
+            critic_losses.append(critic_loss)
+
             self.update_model(model=self.actor, target_model=self.target_actor)
             self.update_model(model=self.critic, target_model=self.target_critic)
 
@@ -156,7 +168,9 @@ class BallSortLearner:
         self.save_history(
             reward=episodic_reward,
             duration=count,
-            score=self.game.score
+            score=self.game.score,
+            actor_loss=np.mean(actor_losses),
+            critic_loss=np.mean(critic_losses)
         )
 
     def policy(self, state):
@@ -227,7 +241,7 @@ class BallSortLearner:
         reward_batch = tf.cast(reward_batch, dtype=tf.float32)
         next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
 
-        self.update(state_batch, action_batch, reward_batch, next_state_batch)
+        return self.update(state_batch, action_batch, reward_batch, next_state_batch)
 
     def save_history(self, **kwargs):
         self.train_history.append(kwargs)

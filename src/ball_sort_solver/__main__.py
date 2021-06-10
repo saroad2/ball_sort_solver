@@ -70,7 +70,9 @@ def train_ball_sort(configuration):
             bar.label = (
                 f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
                 f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
-                f"Score: {learner.recent_score_mean(plot_window):.2f}"
+                f"Score: {learner.recent_score_mean(plot_window):.2f}, "
+                f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2f}, "
+                f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2f}"
             )
 
 
