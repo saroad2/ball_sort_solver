@@ -16,7 +16,8 @@ class BallSortLearner:
         tau: float,
         noise_std: float,
         won_reward: float,
-        score_reward: float,
+        score_gain_reward: float,
+        score_loss_penalty: float,
         illegal_move_loss: float,
         move_loss: float,
         buffer_capacity: int,
@@ -34,7 +35,8 @@ class BallSortLearner:
         self.noise_std = noise_std
 
         self.won_reward = won_reward
-        self.score_reward = score_reward
+        self.score_gain_reward = score_gain_reward
+        self.score_loss_penalty = score_loss_penalty
         self.illegal_move_loss = illegal_move_loss
         self.move_loss = move_loss
 
@@ -180,7 +182,6 @@ class BallSortLearner:
             reward = self.won_reward
         else:
             done = False
-
             reward = self.move_reward(
                 current_score=self.game.score, prev_score=prev_score
             )
@@ -188,9 +189,9 @@ class BallSortLearner:
 
     def move_reward(self, current_score, prev_score):
         if current_score > prev_score:
-            return self.score_reward
+            return current_score * self.score_gain_reward
         if current_score < prev_score:
-            return -self.score_reward
+            return -current_score * self.score_loss_penalty
         return -self.move_loss
 
     def update_model(self, model, target_model):
