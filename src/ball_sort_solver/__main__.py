@@ -63,14 +63,14 @@ def train_ball_sort(configuration):
     )
     train_config = config_dict["train"]
     episodes = train_config["episodes"]
+    plot_window = train_config["plot_window"]
     with click.progressbar(length=episodes, show_pos=True, show_percent=False) as bar:
         for _ in bar:
             learner.run_episode()
-            history = learner.last_train_history
             bar.label = (
-                f"Rewards: {history['reward']:.2f}, "
-                f"Duration: {history['duration']}, "
-                f"Score: {history['score']}"
+                f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
+                f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
+                f"Score: {learner.recent_score_mean(plot_window):.2f}"
             )
 
 

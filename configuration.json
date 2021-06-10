@@ -10,7 +10,7 @@
     "noise_std": 0.2,
     "won_reward": 100,
     "score_reward": 10,
-    "illegal_move_loss": 10,
+    "illegal_move_loss": 5,
     "move_loss": 1,
     "buffer_capacity": 50000,
     "batch_size": 64,
@@ -20,6 +20,7 @@
     "critic_inner_layer_neurons": 64
   },
   "train": {
-    "episodes": 100000
+    "episodes": 100000,
+    "plot_window": 500
   }
 }

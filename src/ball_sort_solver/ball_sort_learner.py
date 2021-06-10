@@ -81,6 +81,24 @@ class BallSortLearner:
             return None
         return self.train_history[-1]
 
+    def recent_reward_mean(self, window):
+        return self.recent_field_mean(field="reward", window=window)
+
+    def recent_duration_mean(self, window):
+        return self.recent_field_mean(field="duration", window=window)
+
+    def recent_score_mean(self, window):
+        return self.recent_field_mean(field="score", window=window)
+
+    def recent_field_mean(self, field, window):
+        field_values = [
+            history_point[field] for history_point in self.train_history
+        ]
+        if len(field_values) > window:
+            field_values = field_values[window:]
+        return np.mean(field_values)
+
+
     @tf.function
     def update(
         self, state_batch, action_batch, reward_batch, next_state_batch,
@@ -181,13 +199,14 @@ class BallSortLearner:
         # Set index to zero if buffer_capacity is exceeded,
         # replacing old records
 
-        self.state_buffer[self.buffer_counter] = prev_state
-        self.action_buffer[self.buffer_counter] = action
-        self.reward_buffer[self.buffer_counter] = reward
-        self.next_state_buffer[self.buffer_counter] = current_state
+        index = self.buffer_counter % self.buffer_capacity
+
+        self.state_buffer[index] = prev_state
+        self.action_buffer[index] = action
+        self.reward_buffer[index] = reward
+        self.next_state_buffer[index] = current_state
 
         self.buffer_counter += 1
-        self.buffer_counter %= self.buffer_capacity
 
     def learn(self):
         # Get sampling range
