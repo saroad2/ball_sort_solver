@@ -38,8 +38,11 @@ class BallSortGame:
     def stack_size(self, stack_index):
         return len(self.stacks[stack_index])
 
+    def stack_remaining_space(self, stack_index):
+        return self.stack_capacity - self.stack_size(stack_index)
+
     def stack_completed(self, stack_index):
-        if self.stack_size(stack_index) != self.stack_capacity:
+        if self.stack_remaining_space(stack_index) != 0:
             return False
         return all(
             self.stacks[stack_index][i] == self.stacks[stack_index][0]
