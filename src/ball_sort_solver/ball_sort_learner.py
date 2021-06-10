@@ -180,13 +180,18 @@ class BallSortLearner:
             reward = self.won_reward
         else:
             done = False
-            current_score = self.game.score
-            reward = (
-                self.score_reward
-                if current_score > prev_score
-                else -self.move_loss
+
+            reward = self.move_reward(
+                current_score=self.game.score, prev_score=prev_score
             )
         return prev_state, action, reward, current_state, done
+
+    def move_reward(self, current_score, prev_score):
+        if current_score > prev_score:
+            return self.score_reward
+        if current_score < prev_score:
+            return -self.score_reward
+        return -self.move_loss
 
     def update_model(self, model, target_model):
         model_weights, target_weights = target_model.get_weights(), model.get_weights()
