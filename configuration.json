@@ -1,5 +1,25 @@
 {
-  "balls_colors_number": 7,
-  "stack_capacity": 4,
-  "extra_stacks": 2
+  "game": {
+    "balls_colors_number": 7,
+    "stack_capacity": 4,
+    "extra_stacks": 2
+  },
+  "learner": {
+    "gamma": 0.9,
+    "tau": 0.005,
+    "noise_std": 0.2,
+    "won_reward": 100,
+    "score_reward": 10,
+    "illegal_move_loss": 10,
+    "move_loss": 1,
+    "buffer_capacity": 50000,
+    "batch_size": 64,
+    "actor_learning_rate": 0.001,
+    "critic_learning_rate": 0.002,
+    "actor_inner_layer_neurons": 64,
+    "critic_inner_layer_neurons": 64
+  },
+  "train": {
+    "episodes": 100000
+  }
 }
