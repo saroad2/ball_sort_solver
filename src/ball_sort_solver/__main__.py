@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 
 import click
@@ -58,6 +59,8 @@ def train_ball_sort(configuration, output_dir):
     )
     if output_dir is not None:
         output_dir = Path(output_dir)
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
         output_dir.mkdir(exist_ok=True, parents=True)
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
