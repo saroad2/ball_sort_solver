@@ -7,15 +7,15 @@
     "score_gain_reward": 1,
     "score_loss_penalty": 1,
     "illegal_move_loss": 0.5,
-    "move_loss": 0.1
+    "move_loss": 0.01
   },
   "learner": {
-    "gamma": 0.8,
+    "gamma": 0.7,
     "tau": 0.005,
     "start_noise": 0.3,
     "noise_decay": 1e-4,
     "min_noise": 0.1,
-    "max_duration": 50,
+    "max_duration": 100,
     "buffer_capacity": 50000,
     "batch_size": 64,
     "actor_learning_rate": 0.001,
@@ -25,6 +25,6 @@
   },
   "train": {
     "episodes": 100000,
-    "plot_window": 500
+    "plot_window": 1000
   }
 }
