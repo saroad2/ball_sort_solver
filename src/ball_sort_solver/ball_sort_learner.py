@@ -187,7 +187,7 @@ class BallSortLearner:
         return prev_state, action, reward, current_state, done
 
     def update_model(self, model, target_model):
-        model_weights, target_weights = target_model.get_weights(), model.get_weights()
+        model_weights, target_weights = model.get_weights(), target_model.get_weights()
         new_weights = []
         for (a, b) in zip(model_weights, target_weights):
             new_weights.append(a * self.tau + b * (1 - self.tau))
