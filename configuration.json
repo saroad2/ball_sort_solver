@@ -10,7 +10,7 @@
     "move_loss": 0
   },
   "learner": {
-    "gamma": 0.9,
+    "gamma": 0.8,
     "tau": 0.005,
     "start_noise": 0.3,
     "noise_decay": 1e-4,
