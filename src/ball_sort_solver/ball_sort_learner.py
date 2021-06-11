@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Optional
+
 import numpy as np
 import tensorflow as tf
 
@@ -29,6 +32,7 @@ class BallSortLearner:
         critic_learning_rate: int,
         actor_inner_layer_neurons: int,
         critic_inner_layer_neurons: int,
+        output_dir: Optional[Path]
     ):
         self.game = game
         self.state_getter = state_getter
@@ -44,20 +48,33 @@ class BallSortLearner:
         self.move_loss = move_loss
         self.max_duration = max_duration
 
+        self.output_dir = output_dir
+        if self.output_dir is not None:
+            self.logs_dir = output_dir / "logs"
+            self.checkpoints_dir = output_dir / "checkpoints"
+            self.writer = tf.summary.create_file_writer(str(self.logs_dir))
+        else:
+            self.logs_dir = None
+            self.checkpoints_dir = None
+
         self.actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,
             action_size=self.actions_size,
+            chkpt_dir=self.checkpoints_dir
         )
         self.critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
+            chkpt_dir=self.checkpoints_dir,
         )
 
         self.target_actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,
             action_size=self.actions_size,
+            chkpt_dir=self.checkpoints_dir,
         )
         self.target_critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
+            chkpt_dir=self.checkpoints_dir,
         )
 
         self.actor.compile(
@@ -232,4 +249,10 @@ class BallSortLearner:
         return actor_loss, critic_loss
 
     def save_history(self, **kwargs):
+        index = len(self.train_history)
         self.train_history.append(kwargs)
+        if self.writer is None:
+            return
+        with self.writer.as_default():
+            for key, value in kwargs.items():
+                tf.summary.scalar(name=key, data=value, step=index)

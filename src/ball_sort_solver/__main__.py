@@ -46,12 +46,19 @@ def play_ball_sort(configuration):
     "-c", "--configuration",
     type=click.Path(dir_okay=False, exists=True),
 )
-def train_ball_sort(configuration):
+@click.option(
+    "-o", "--output-dir",
+    type=click.Path(file_okay=False),
+)
+def train_ball_sort(configuration, output_dir):
     configuration = (
         Path(configuration)
         if configuration is not None
         else Path.cwd() / "configuration.json"
     )
+    if output_dir is not None:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(exist_ok=True, parents=True)
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
     game = BallSortGame(**config_dict["game"])
@@ -59,6 +66,7 @@ def train_ball_sort(configuration):
     learner = BallSortLearner(
         game=game,
         state_getter=state_getter,
+        output_dir=output_dir,
         **config_dict["learner"]
     )
     train_config = config_dict["train"]

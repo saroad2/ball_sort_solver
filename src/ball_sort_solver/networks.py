@@ -1,17 +1,21 @@
-import os
+from pathlib import Path
+from tempfile import tempdir
+
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense
 
 
 class CriticNetwork(keras.Model):
-    def __init__(self, inner_layers_neurons, name='critic', chkpt_dir='tmp/ddpg'):
+
+    def __init__(self, inner_layers_neurons, name='critic', chkpt_dir=None):
         super(CriticNetwork, self).__init__()
 
+        if chkpt_dir is None:
+            chkpt_dir = Path(tempdir)
         self.model_name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir,
-                    self.model_name+'_ddpg.h5')
+        self.checkpoint_file = self.checkpoint_dir / f"{self.model_name}_ddpg.h5"
 
         self.fc1 = Dense(inner_layers_neurons, activation='relu')
         self.fc2 = Dense(inner_layers_neurons, activation='relu')
@@ -28,14 +32,15 @@ class CriticNetwork(keras.Model):
 
 class ActorNetwork(keras.Model):
     def __init__(
-        self, inner_layers_neurons, action_size, name='actor', chkpt_dir='tmp/ddpg'
+        self, inner_layers_neurons, action_size, name='actor', chkpt_dir=None
     ):
         super(ActorNetwork, self).__init__()
 
+        if chkpt_dir is None:
+            chkpt_dir = Path(tempdir)
         self.model_name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir,
-                    self.model_name+'_ddpg.h5')
+        self.checkpoint_file = self.checkpoint_dir / f"{self.model_name}_ddpg.h5"
 
         self.fc1 = Dense(inner_layers_neurons, activation='relu')
         self.fc2 = Dense(inner_layers_neurons, activation='relu')
