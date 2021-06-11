@@ -3,7 +3,9 @@ import tensorflow as tf
 
 from ball_sort_solver.ball_sort_game import BallSortGame
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
+from ball_sort_solver.buffer import ReplayBuffer
 from ball_sort_solver.exceptions import IllegalMove
+from ball_sort_solver.networks import ActorNetwork, CriticNetwork
 
 
 class BallSortLearner:
@@ -40,32 +42,44 @@ class BallSortLearner:
         self.illegal_move_loss = illegal_move_loss
         self.move_loss = move_loss
 
-        self.actor = self.create_actor_model(actor_inner_layer_neurons)
-        self.critic = self.create_critic_model(critic_inner_layer_neurons)
+        self.actor = ActorNetwork(
+            inner_layers_neurons=actor_inner_layer_neurons,
+            action_size=self.actions_size,
+        )
+        self.critic = CriticNetwork(
+            inner_layers_neurons=critic_inner_layer_neurons,
+        )
 
-        self.actor_optimizer = tf.keras.optimizers.Adam(actor_learning_rate)
-        self.critic_optimizer = tf.keras.optimizers.Adam(critic_learning_rate)
+        self.target_actor = ActorNetwork(
+            inner_layers_neurons=actor_inner_layer_neurons,
+            action_size=self.actions_size,
+        )
+        self.target_critic = CriticNetwork(
+            inner_layers_neurons=critic_inner_layer_neurons,
+        )
 
-        self.target_actor = self.create_actor_model(actor_inner_layer_neurons)
-        self.target_critic = self.create_critic_model(critic_inner_layer_neurons)
+        self.actor.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=actor_learning_rate)
+        )
+        self.critic.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=critic_learning_rate)
+        )
+        self.target_actor.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=actor_learning_rate)
+        )
+        self.target_critic.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=critic_learning_rate)
+        )
 
         self.target_actor.set_weights(self.actor.get_weights())
         self.target_critic.set_weights(self.critic.get_weights())
 
-        # Number of "experiences" to store at max
-        self.buffer_capacity = buffer_capacity
-        # Num of tuples to train on.
-        self.batch_size = batch_size
-
-        # Its tells us num of times record() was called.
-        self.buffer_counter = 0
-
-        # Instead of list of tuples as the exp.replay concept go
-        # We use different np.arrays for each tuple element
-        self.state_buffer = np.zeros((self.buffer_capacity, self.state_size))
-        self.action_buffer = np.zeros((self.buffer_capacity, self.actions_size))
-        self.reward_buffer = np.zeros((self.buffer_capacity, 1))
-        self.next_state_buffer = np.zeros((self.buffer_capacity, self.state_size))
+        self.buffer = ReplayBuffer(
+            max_size=buffer_capacity,
+            batch_size=batch_size,
+            state_size=self.state_size,
+            action_size=self.actions_size,
+        )
 
         self.train_history = []
 
@@ -106,39 +120,6 @@ class BallSortLearner:
             field_values = field_values[window:]
         return np.mean(field_values)
 
-
-    @tf.function
-    def update(
-        self, state_batch, action_batch, reward_batch, next_state_batch,
-    ):
-        # Training and updating Actor & Critic networks.
-        # See Pseudo Code.
-        with tf.GradientTape() as tape:
-            target_actions = self.target_actor(next_state_batch, training=True)
-            y = reward_batch + self.gamma * self.target_critic(
-                [next_state_batch, target_actions], training=True
-            )
-            critic_value = self.critic([state_batch, action_batch], training=True)
-            critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
-
-        critic_grad = tape.gradient(critic_loss, self.critic.trainable_variables)
-        self.critic_optimizer.apply_gradients(
-            zip(critic_grad, self.critic.trainable_variables)
-        )
-
-        with tf.GradientTape() as tape:
-            actions = self.actor(state_batch, training=True)
-            critic_value = self.critic([state_batch, actions], training=True)
-            # Used `-value` as we want to maximize the value given
-            # by the critic for our actions
-            actor_loss = -tf.math.reduce_mean(critic_value)
-
-        actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
-        self.actor_optimizer.apply_gradients(
-            zip(actor_grad, self.actor.trainable_variables)
-        )
-        return actor_loss, critic_loss
-
     def run_episode(self):
         self.game.reset()
         episodic_reward = 0
@@ -151,7 +132,9 @@ class BallSortLearner:
 
             prev_state, action, reward, current_state, done = self.make_move()
 
-            self.record(prev_state, action, reward, current_state)
+            self.buffer.store_transition(
+                prev_state, action, reward, current_state, done
+            )
             episodic_reward += reward
 
             actor_loss, critic_loss = self.learn()
@@ -215,87 +198,39 @@ class BallSortLearner:
             new_weights.append(a * self.tau + b * (1 - self.tau))
         target_model.set_weights(new_weights)
 
-    def record(self, prev_state, action, reward, current_state):
-        # Set index to zero if buffer_capacity is exceeded,
-        # replacing old records
-
-        index = self.buffer_counter % self.buffer_capacity
-
-        self.state_buffer[index] = prev_state
-        self.action_buffer[index] = action
-        self.reward_buffer[index] = reward
-        self.next_state_buffer[index] = current_state
-
-        self.buffer_counter += 1
-
     def learn(self):
-        # Get sampling range
-        record_range = min(self.buffer_counter, self.buffer_capacity)
-        # Randomly sample indices
-        batch_indices = np.random.choice(record_range, self.batch_size)
+        if self.buffer.mem_cntr < self.buffer.batch_size:
+            return 0, 0
 
-        # Convert to tensors
-        state_batch = tf.convert_to_tensor(self.state_buffer[batch_indices])
-        action_batch = tf.convert_to_tensor(self.action_buffer[batch_indices])
-        reward_batch = tf.convert_to_tensor(self.reward_buffer[batch_indices])
-        reward_batch = tf.cast(reward_batch, dtype=tf.float32)
-        next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
+        state, action, reward, new_state, done = self.buffer.sample_buffer()
 
-        return self.update(state_batch, action_batch, reward_batch, next_state_batch)
+        states = tf.convert_to_tensor(state, dtype=tf.float32)
+        states_ = tf.convert_to_tensor(new_state, dtype=tf.float32)
+        actions = tf.convert_to_tensor(action, dtype=tf.float32)
+
+        with tf.GradientTape() as tape:
+            target_actions = self.target_actor(states_)
+            critic_value_ = tf.squeeze(self.target_critic(
+                states_, target_actions), 1)
+            critic_value = tf.squeeze(self.critic(states, actions), 1)
+            target = reward + self.gamma * critic_value_ * (1 - done)
+            critic_loss = tf.keras.losses.MSE(target, critic_value)
+
+        critic_network_gradient = tape.gradient(critic_loss,
+                                                self.critic.trainable_variables)
+        self.critic.optimizer.apply_gradients(zip(
+            critic_network_gradient, self.critic.trainable_variables))
+
+        with tf.GradientTape() as tape:
+            new_policy_actions = self.actor(states)
+            actor_loss = -self.critic(states, new_policy_actions)
+            actor_loss = tf.math.reduce_mean(actor_loss)
+
+        actor_network_gradient = tape.gradient(actor_loss,
+                                               self.actor.trainable_variables)
+        self.actor.optimizer.apply_gradients(zip(
+            actor_network_gradient, self.actor.trainable_variables))
+        return actor_loss, critic_loss
 
     def save_history(self, **kwargs):
         self.train_history.append(kwargs)
-
-    def create_actor_model(
-        self,
-        actor_inner_layer_neurons,
-    ):
-        return tf.keras.models.Sequential(
-            [
-                tf.keras.layers.Input(shape=self.state_size),
-                tf.keras.layers.Dense(
-                    actor_inner_layer_neurons,
-                    activation="relu",
-                    kernel_initializer=tf.keras.initializers.he_uniform,
-                ),
-                tf.keras.layers.Dense(
-                    actor_inner_layer_neurons,
-                    activation="relu",
-                    kernel_initializer=tf.keras.initializers.he_uniform
-                ),
-                tf.keras.layers.Dense(
-                    self.actions_size,
-                    activation="tanh",
-                    kernel_initializer=tf.keras.initializers.he_uniform)
-            ]
-        )
-
-    def create_critic_model(
-        self,
-        critic_inner_layer_neurons,
-    ):
-        state_input = tf.keras.layers.Input(shape=(self.state_size,))
-        state_out = tf.keras.layers.Dense(16, activation="relu")(state_input)
-        state_out = tf.keras.layers.Dense(32, activation="relu")(state_out)
-
-        # Action as input
-        action_input = tf.keras.layers.Input(shape=(self.actions_size,))
-        action_out = tf.keras.layers.Dense(32, activation="relu")(action_input)
-
-        # Both are passed through seperate layer before concatenating
-        concat = tf.keras.layers.Concatenate()([state_out, action_out])
-
-        out = tf.keras.layers.Dense(
-            critic_inner_layer_neurons,
-            activation="relu",
-        )(concat)
-        out = tf.keras.layers.Dense(
-            critic_inner_layer_neurons,
-            activation="relu",
-        )(out)
-        outputs = tf.keras.layers.Dense(1)(out)
-
-        # Outputs single value for give state-action
-        model = tf.keras.Model([state_input, action_input], outputs)
-
-        return model

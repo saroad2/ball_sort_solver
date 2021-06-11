@@ -17,8 +17,8 @@
     "batch_size": 64,
     "actor_learning_rate": 0.001,
     "critic_learning_rate": 0.002,
-    "actor_inner_layer_neurons": 64,
-    "critic_inner_layer_neurons": 64
+    "actor_inner_layer_neurons": 512,
+    "critic_inner_layer_neurons": 512
   },
   "train": {
     "episodes": 100000,
