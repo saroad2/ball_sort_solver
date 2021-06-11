@@ -87,8 +87,8 @@ def train_ball_sort(configuration, output_dir):
                 f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
                 f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
                 f"Max score: {learner.recent_max_score_mean(plot_window):.2f}, "
-                f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2f}, "
-                f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2f}, "
+                f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2e}, "
+                f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}, "
                 f"Noise: {learner.noise:.2f}"
             )
 
