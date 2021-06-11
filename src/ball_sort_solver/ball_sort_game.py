@@ -13,6 +13,7 @@ class BallSortGame:
         won_reward: float,
         score_gain_reward: float,
         score_loss_penalty: float,
+        score_change_rate: float,
         illegal_move_loss: float,
         move_loss: float,
     ):
@@ -23,6 +24,7 @@ class BallSortGame:
         self.won_reward = won_reward
         self.score_gain_reward = score_gain_reward
         self.score_loss_penalty = score_loss_penalty
+        self.score_change_rate = score_change_rate
         self.illegal_move_loss = illegal_move_loss
         self.move_loss = move_loss
 
@@ -94,9 +96,13 @@ class BallSortGame:
 
     def move_reward(self, current_score, prev_score):
         if current_score > prev_score:
-            return self.score_gain_reward
+            return self.score_gain_reward * np.exp(
+                self.score_change_rate * current_score
+            )
         if current_score < prev_score:
-            return -self.score_loss_penalty
+            return -self.score_loss_penalty * np.exp(
+                self.score_change_rate * prev_score
+            )
         return -self.move_loss
 
     def fill_stacks(self):
