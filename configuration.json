@@ -7,7 +7,7 @@
   "learner": {
     "gamma": 0.9,
     "tau": 0.005,
-    "noise_std": 0.2,
+    "noise_std": 0.1,
     "won_reward": 100,
     "score_gain_reward": 10,
     "score_loss_penalty": 20,
