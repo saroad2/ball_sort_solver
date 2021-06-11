@@ -7,7 +7,6 @@ import click
 from ball_sort_solver.ball_sort_game import BallSortGame
 from ball_sort_solver.ball_sort_learner import BallSortLearner
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
-from ball_sort_solver.exceptions import IllegalMove
 
 
 @click.group()
@@ -30,16 +29,21 @@ def play_ball_sort(configuration):
     )
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
-    game = BallSortGame(**config_dict)
-    while not game.won:
+    game = BallSortGame(**config_dict["game"])
+    done = False
+    rewards_sum = 0
+    while not done:
+        click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
         click.echo(game)
         from_index = click.prompt("From index", type=int)
         to_index = click.prompt("To index", type=int)
-        try:
-            game.move(from_index, to_index)
-        except IllegalMove as e:
-            click.echo(f"You tried to make an illegal move: {e}")
-    click.echo("Game won!")
+        reward, done = game.move(from_index, to_index)
+        rewards_sum += reward
+    if game.won:
+        click.echo("Game won!")
+    else:
+        click.echo("Game lost...")
+    click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
 
 
 @ball_sort_solver_cli.command("train")

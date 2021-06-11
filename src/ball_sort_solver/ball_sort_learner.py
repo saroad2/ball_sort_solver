@@ -7,7 +7,6 @@ import tensorflow as tf
 from ball_sort_solver.ball_sort_game import BallSortGame
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
 from ball_sort_solver.buffer import ReplayBuffer
-from ball_sort_solver.exceptions import IllegalMove
 from ball_sort_solver.networks import ActorNetwork, CriticNetwork
 
 
@@ -22,11 +21,6 @@ class BallSortLearner:
         start_noise: float,
         noise_decay: float,
         min_noise: float,
-        won_reward: float,
-        score_gain_reward: float,
-        score_loss_penalty: float,
-        illegal_move_loss: float,
-        move_loss: float,
         max_duration: int,
         buffer_capacity: int,
         batch_size: int,
@@ -44,12 +38,6 @@ class BallSortLearner:
         self.noise = start_noise
         self.noise_decay = noise_decay
         self.min_noise = min_noise
-
-        self.won_reward = won_reward
-        self.score_gain_reward = score_gain_reward
-        self.score_loss_penalty = score_loss_penalty
-        self.illegal_move_loss = illegal_move_loss
-        self.move_loss = move_loss
         self.max_duration = max_duration
 
         self.output_dir = output_dir
@@ -192,31 +180,11 @@ class BallSortLearner:
     def make_move(self):
         prev_state = self.state_getter.get_state(self.game)
         action = self.policy(prev_state)
-        prev_score = self.game.score
 
         from_index, to_index = np.argmin(action), np.argmax(action)
-        try:
-            self.game.move(from_index=from_index, to_index=to_index)
-        except IllegalMove:
-            reward = -self.illegal_move_loss
-            return prev_state, action, reward, prev_state, True
+        reward, done = self.game.move(from_index=from_index, to_index=to_index)
         current_state = self.state_getter.get_state(self.game)
-        if self.game.won:
-            done = True
-            reward = self.won_reward
-        else:
-            done = False
-            reward = self.move_reward(
-                current_score=self.game.score, prev_score=prev_score
-            )
         return prev_state, action, reward, current_state, done
-
-    def move_reward(self, current_score, prev_score):
-        if current_score > prev_score:
-            return current_score * self.score_gain_reward
-        if current_score < prev_score:
-            return -current_score * self.score_loss_penalty
-        return -self.move_loss
 
     def update_model(self, model, target_model):
         model_weights, target_weights = target_model.get_weights(), model.get_weights()

@@ -2,7 +2,12 @@
   "game": {
     "balls_colors_number": 7,
     "stack_capacity": 4,
-    "extra_stacks": 2
+    "extra_stacks": 2,
+    "won_reward": 100,
+    "score_gain_reward": 10,
+    "score_loss_penalty": 20,
+    "illegal_move_loss": 5,
+    "move_loss": 0
   },
   "learner": {
     "gamma": 0.9,
@@ -10,11 +15,6 @@
     "start_noise": 0.3,
     "noise_decay": 1e-4,
     "min_noise": 0.1,
-    "won_reward": 100,
-    "score_gain_reward": 10,
-    "score_loss_penalty": 20,
-    "illegal_move_loss": 5,
-    "move_loss": 0,
     "max_duration": 50,
     "buffer_capacity": 50000,
     "batch_size": 64,
