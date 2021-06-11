@@ -3,11 +3,11 @@
     "balls_colors_number": 7,
     "stack_capacity": 4,
     "extra_stacks": 2,
-    "won_reward": 100,
-    "score_gain_reward": 10,
-    "score_loss_penalty": 10,
-    "illegal_move_loss": 5,
-    "move_loss": 0
+    "won_reward": 10,
+    "score_gain_reward": 1,
+    "score_loss_penalty": 1,
+    "illegal_move_loss": 0.5,
+    "move_loss": 0.1
   },
   "learner": {
     "gamma": 0.8,
