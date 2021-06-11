@@ -119,4 +119,4 @@ class BallSortGame:
         self.fill_stacks()
 
     def __repr__(self):
-        return "\n".join(f"\t{list(stack)}" for stack in self.stacks)
+        return "\n".join(f"\t{i}) {list(stack)}" for i, stack in enumerate(self.stacks))
