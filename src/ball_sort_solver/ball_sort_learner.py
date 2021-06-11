@@ -19,7 +19,9 @@ class BallSortLearner:
         state_getter: BallSortStateGetter,
         gamma: float,
         tau: float,
-        noise_std: float,
+        start_noise: float,
+        noise_decay: float,
+        min_noise: float,
         won_reward: float,
         score_gain_reward: float,
         score_loss_penalty: float,
@@ -39,7 +41,9 @@ class BallSortLearner:
 
         self.gamma = gamma
         self.tau = tau
-        self.noise_std = noise_std
+        self.noise = start_noise
+        self.noise_decay = noise_decay
+        self.min_noise = min_noise
 
         self.won_reward = won_reward
         self.score_gain_reward = score_gain_reward
@@ -139,8 +143,13 @@ class BallSortLearner:
             field_values = field_values[window:]
         return np.mean(field_values)
 
+    def update_noise(self):
+        if self.noise > self.min_noise:
+            self.noise *= np.exp(-self.noise_decay)
+
     def run_episode(self):
         self.game.reset()
+        self.update_noise()
         episodic_reward = 0
         actor_losses = []
         critic_losses = []
@@ -174,7 +183,7 @@ class BallSortLearner:
 
     def policy(self, state):
         sampled_actions = tf.squeeze(self.actor(state.reshape(-1, *state.shape)))
-        noise = np.random.normal(scale=self.noise_std, size=(self.actions_size,))
+        noise = np.random.normal(scale=self.noise, size=(self.actions_size,))
 
         return sampled_actions.numpy() + noise
 
