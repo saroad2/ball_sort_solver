@@ -16,6 +16,7 @@ class BallSortGame:
         self.stack_capacity = stack_capacity
         self.extra_stacks = extra_stacks
         self.stacks = [deque() for _ in range(balls_colors_number + extra_stacks)]
+        self.duration = 0
         self.fill_stacks()
 
     @property
@@ -65,6 +66,7 @@ class BallSortGame:
             raise IllegalMove(
                 "Can't move ball to stack with top ball with different color"
             )
+        self.duration += 1
         self.stacks[to_index].append(self.stacks[from_index].pop())
 
     def fill_stacks(self):
@@ -81,6 +83,7 @@ class BallSortGame:
                     del remaining_balls[ball_color]
 
     def reset(self):
+        self.duration = 0
         for stack in self.stacks:
             stack.clear()
         self.fill_stacks()

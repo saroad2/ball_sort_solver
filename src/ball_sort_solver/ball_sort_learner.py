@@ -22,6 +22,7 @@ class BallSortLearner:
         score_loss_penalty: float,
         illegal_move_loss: float,
         move_loss: float,
+        max_duration: int,
         buffer_capacity: int,
         batch_size: int,
         actor_learning_rate: int,
@@ -41,6 +42,7 @@ class BallSortLearner:
         self.score_loss_penalty = score_loss_penalty
         self.illegal_move_loss = illegal_move_loss
         self.move_loss = move_loss
+        self.max_duration = max_duration
 
         self.actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,
@@ -123,13 +125,10 @@ class BallSortLearner:
     def run_episode(self):
         self.game.reset()
         episodic_reward = 0
-        count = 0
         actor_losses = []
         critic_losses = []
 
-        while True:
-            count += 1
-
+        while self.game.duration < self.max_duration:
             prev_state, action, reward, current_state, done = self.make_move()
 
             self.buffer.store_transition(
@@ -150,7 +149,7 @@ class BallSortLearner:
 
         self.save_history(
             reward=episodic_reward,
-            duration=count,
+            duration=self.game.duration,
             score=self.game.score,
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses)
