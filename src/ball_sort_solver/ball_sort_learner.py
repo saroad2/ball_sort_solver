@@ -128,7 +128,7 @@ class BallSortLearner:
             history_point[field] for history_point in self.train_history
         ]
         if len(field_values) > window:
-            field_values = field_values[window:]
+            field_values = field_values[-window:]
         return np.mean(field_values)
 
     def update_noise(self):
