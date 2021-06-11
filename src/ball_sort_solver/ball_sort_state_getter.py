@@ -15,4 +15,5 @@ class BallSortStateGetter:
         for i in range(game.stacks_number):
             state.extend(game.stacks[i])
             state.extend([0 for _ in range(game.stack_remaining_space(i))])
-        return np.array(state)
+        state = np.array(state)
+        return state / game.balls_colors_number
