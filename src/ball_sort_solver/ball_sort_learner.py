@@ -185,7 +185,9 @@ class BallSortLearner:
         sampled_actions = tf.squeeze(self.actor(state.reshape(-1, *state.shape)))
         noise = np.random.normal(scale=self.noise, size=(self.actions_size,))
 
-        return sampled_actions.numpy() + noise
+        action = sampled_actions.numpy() + noise
+        action = tf.clip_by_value(action, -1, 1)
+        return action
 
     def make_move(self):
         prev_state = self.state_getter.get_state(self.game)
