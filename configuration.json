@@ -3,6 +3,7 @@
     "balls_colors_number": 7,
     "stack_capacity": 4,
     "extra_stacks": 2,
+    "score_base": 3,
     "won_reward": 10,
     "score_gain_reward": 1,
     "score_loss_penalty": 1,

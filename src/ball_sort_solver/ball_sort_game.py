@@ -9,6 +9,7 @@ class BallSortGame:
         balls_colors_number: int,
         stack_capacity: int,
         extra_stacks: int,
+        score_base: float,
         won_reward: float,
         score_gain_reward: float,
         score_loss_penalty: float,
@@ -18,6 +19,7 @@ class BallSortGame:
         self.balls_colors_number = balls_colors_number
         self.stack_capacity = stack_capacity
         self.extra_stacks = extra_stacks
+        self.score_base = score_base
         self.won_reward = won_reward
         self.score_gain_reward = score_gain_reward
         self.score_loss_penalty = score_loss_penalty
@@ -34,16 +36,23 @@ class BallSortGame:
 
     @property
     def score(self):
-        return len(
-            [
-                i for i in range(self.stacks_number)
-                if self.stack_completed(i)
-             ]
-        )
+        scores_sum = 0
+        for stack in self.stacks:
+            if len(stack) == 0:
+                continue
+            i = 1
+            while i < len(stack) and stack[i] == stack[0]:
+                i += 1
+            scores_sum += np.power(self.score_base, i)
+        return scores_sum
 
     @property
     def won(self):
-        return self.score == self.balls_colors_number
+        completed_stacks = [
+            i for i in range(self.stacks_number)
+            if self.stack_completed(i)
+        ]
+        return len(completed_stacks) == self.balls_colors_number
 
     def stack_size(self, stack_index):
         return len(self.stacks[stack_index])
