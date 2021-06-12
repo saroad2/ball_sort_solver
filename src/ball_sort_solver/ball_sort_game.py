@@ -97,11 +97,11 @@ class BallSortGame:
     def move_reward(self, current_score, prev_score):
         if current_score > prev_score:
             return self.score_gain_reward * np.exp(
-                self.score_change_rate * current_score
+                self.score_change_rate * (current_score - prev_score)
             )
         if current_score < prev_score:
             return -self.score_loss_penalty * np.exp(
-                self.score_change_rate * prev_score
+                self.score_change_rate * (prev_score - current_score)
             )
         return -self.move_loss
 
