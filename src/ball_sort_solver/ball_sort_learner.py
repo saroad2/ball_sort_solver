@@ -117,8 +117,8 @@ class BallSortLearner:
     def recent_final_score_mean(self, window):
         return self.recent_field_mean(field="final_score", window=window)
 
-    def recent_max_score_mean(self, window):
-        return self.recent_field_mean(field="max_score", window=window)
+    def recent_score_difference_mean(self, window):
+        return self.recent_field_mean(field="score_difference", window=window)
 
     def recent_actor_loss_mean(self, window):
         return self.recent_field_mean(field="actor_loss", window=window)
@@ -142,7 +142,7 @@ class BallSortLearner:
         self.game.reset()
         self.update_noise()
         episodic_reward = 0
-        max_score = 0
+        initial_score = self.game.score
         actor_losses = []
         critic_losses = []
 
@@ -153,7 +153,6 @@ class BallSortLearner:
                 prev_state, action, reward, current_state, done
             )
             episodic_reward += reward
-            max_score = max(max_score, self.game.score)
 
             actor_loss, critic_loss = self.learn()
             actor_losses.append(actor_loss)
@@ -170,7 +169,7 @@ class BallSortLearner:
             reward=episodic_reward,
             duration=self.game.duration,
             final_score=self.game.score,
-            max_score=max_score,
+            score_difference=self.game.score - initial_score,
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses)
         )
