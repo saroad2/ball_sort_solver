@@ -25,9 +25,11 @@ class BallSortLearner:
         buffer_capacity: int,
         batch_size: int,
         actor_learning_rate: int,
-        critic_learning_rate: int,
         actor_inner_layer_neurons: int,
+        actor_dropout_rate: float,
+        critic_learning_rate: int,
         critic_inner_layer_neurons: int,
+        critic_dropout_rate: float,
         output_dir: Optional[Path]
     ):
         self.game = game
@@ -51,21 +53,25 @@ class BallSortLearner:
 
         self.actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,
+            dropout_rate=actor_dropout_rate,
             action_size=self.actions_size,
             chkpt_dir=self.checkpoints_dir
         )
         self.critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
+            dropout_rate=critic_dropout_rate,
             chkpt_dir=self.checkpoints_dir,
         )
 
         self.target_actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,
+            dropout_rate=actor_dropout_rate,
             action_size=self.actions_size,
             chkpt_dir=self.checkpoints_dir,
         )
         self.target_critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
+            dropout_rate=critic_dropout_rate,
             chkpt_dir=self.checkpoints_dir,
         )
 
