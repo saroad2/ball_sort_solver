@@ -164,13 +164,11 @@ class BallSortLearner:
             actor_losses.append(actor_loss)
             critic_losses.append(critic_loss)
 
-            self.update_model(model=self.actor, target_model=self.target_actor)
-            self.update_model(model=self.critic, target_model=self.target_critic)
-
             # End this episode when `done` is True
             if done:
                 break
 
+        self.update_models()
         self.save_history(
             reward=episodic_reward,
             duration=self.game.duration,
@@ -196,6 +194,10 @@ class BallSortLearner:
         reward, done = self.game.move(from_index=from_index, to_index=to_index)
         current_state = self.state_getter.get_state(self.game)
         return prev_state, action, reward, current_state, done
+
+    def update_models(self):
+        self.update_model(model=self.actor, target_model=self.target_actor)
+        self.update_model(model=self.critic, target_model=self.target_critic)
 
     def update_model(self, model, target_model):
         model_weights, target_weights = model.get_weights(), target_model.get_weights()
