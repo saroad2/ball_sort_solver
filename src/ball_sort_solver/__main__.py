@@ -86,10 +86,9 @@ def train_ball_sort(configuration, output_dir):
                 f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
                 f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
                 f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
-                f"Score difference: {learner.recent_score_difference_mean(plot_window):.2f}, "
+                f"Score diff: {learner.recent_score_difference_mean(plot_window):.2f}, "
                 f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2e}, "
-                f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}, "
-                f"Noise: {learner.noise:.2f}"
+                f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}"
             )
 
 
