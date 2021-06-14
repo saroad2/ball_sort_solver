@@ -17,7 +17,6 @@ class BallSortLearner:
         game: BallSortGame,
         state_getter: BallSortStateGetter,
         gamma: float,
-        tau: float,
         start_noise: float,
         noise_decay: float,
         min_noise: float,
@@ -36,7 +35,6 @@ class BallSortLearner:
         self.state_getter = state_getter
 
         self.gamma = gamma
-        self.tau = tau
         self.noise = start_noise
         self.noise_decay = noise_decay
         self.min_noise = min_noise
@@ -98,6 +96,7 @@ class BallSortLearner:
             action_size=self.actions_size,
         )
 
+        self.model_age = 0
         self.train_history = []
 
     @property
@@ -168,14 +167,14 @@ class BallSortLearner:
             if done:
                 break
 
-        self.update_models()
         self.save_history(
             reward=episodic_reward,
             duration=self.game.duration,
             final_score=self.game.score,
             score_difference=self.game.score - initial_score,
             actor_loss=np.mean(actor_losses),
-            critic_loss=np.mean(critic_losses)
+            critic_loss=np.mean(critic_losses),
+            model_age=self.model_age,
         )
 
     def policy(self, state):
@@ -195,15 +194,17 @@ class BallSortLearner:
         current_state = self.state_getter.get_state(self.game)
         return prev_state, action, reward, current_state, done
 
-    def update_models(self):
-        self.update_model(model=self.actor, target_model=self.target_actor)
-        self.update_model(model=self.critic, target_model=self.target_critic)
+    def update_models(self, tau):
+        self.update_model(model=self.actor, target_model=self.target_actor, tau=tau)
+        self.update_model(model=self.critic, target_model=self.target_critic, tau=tau)
+        self.model_age += 1
 
-    def update_model(self, model, target_model):
+    @classmethod
+    def update_model(cls, model, target_model, tau):
         model_weights, target_weights = model.get_weights(), target_model.get_weights()
         new_weights = []
         for (a, b) in zip(model_weights, target_weights):
-            new_weights.append(a * self.tau + b * (1 - self.tau))
+            new_weights.append(a * tau + b * (1 - tau))
         target_model.set_weights(new_weights)
 
     def learn(self):

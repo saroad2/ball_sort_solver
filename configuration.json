@@ -13,7 +13,6 @@
   },
   "learner": {
     "gamma": 0.9,
-    "tau": 0.05,
     "start_noise": 0.3,
     "noise_decay": 1e-4,
     "min_noise": 0.1,
@@ -29,6 +28,8 @@
   },
   "train": {
     "episodes": 100000,
-    "plot_window": 1000
+    "plot_window": 1000,
+    "tau": 0.5,
+    "model_update_rate": 1000
   }
 }
