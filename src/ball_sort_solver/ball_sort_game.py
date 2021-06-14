@@ -42,10 +42,11 @@ class BallSortGame:
         for stack in self.stacks:
             if len(stack) == 0:
                 continue
-            i = 1
-            while i < len(stack) and stack[i] == stack[0]:
+            i = 0
+            while i + 1 < len(stack) and stack[i + 1] == stack[0]:
                 i += 1
-            scores_sum += np.power(self.score_base, i)
+            if i >= 1:
+                scores_sum += np.power(self.score_base, i - 1)
         return scores_sum
 
     @property
