@@ -7,6 +7,7 @@ import click
 from ball_sort_solver.ball_sort_game import BallSortGame
 from ball_sort_solver.ball_sort_learner import BallSortLearner
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
+from ball_sort_solver.plot_util import plot_all_field_plots
 
 
 @click.group()
@@ -66,6 +67,10 @@ def train_ball_sort(configuration, output_dir):
         if output_dir.exists():
             shutil.rmtree(output_dir)
         output_dir.mkdir(exist_ok=True, parents=True)
+        plots_dir = output_dir / "plots"
+        plots_dir.mkdir()
+    else:
+        plots_dir = None
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
     game = BallSortGame(**config_dict["game"])
@@ -82,19 +87,74 @@ def train_ball_sort(configuration, output_dir):
     model_update_rate = train_config["model_update_rate"]
     tau = train_config["tau"]
     with click.progressbar(length=episodes, show_pos=True, show_percent=False) as bar:
-        for i in bar:
-            learner.run_episode()
-            bar.label = (
-                f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
-                f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
-                f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
-                f"Score diff: {learner.recent_score_difference_mean(plot_window):.2f}, "
-                f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2e}, "
-                f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}, "
-                f"Model age: {learner.model_age}"
-            )
-            if i % model_update_rate == 0:
-                learner.update_models(tau=tau)
+        try:
+            for i in bar:
+                learner.run_episode()
+                bar.label = (
+                    f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
+                    f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
+                    f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
+                    f"Score diff: {learner.recent_score_difference_mean(plot_window):.2f}, "
+                    f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2e}, "
+                    f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}, "
+                    f"Model age: {learner.model_age}"
+                )
+                if i % model_update_rate == 0:
+                    learner.update_models(tau=tau)
+        except KeyboardInterrupt:
+            click.echo()
+            if not click.confirm(
+                "Training was interrupted. Would you like to save results?",
+                default=False,
+            ):
+                click.echo("Training aborted!")
+                return
+
+    if plots_dir is None:
+        return
+    click.echo("Saving plots...")
+    plot_all_field_plots(
+        history=learner.train_history,
+        field="final_score",
+        output_dir=plots_dir,
+        plot_window=plot_window,
+        is_float=True,
+    )
+    plot_all_field_plots(
+        history=learner.train_history,
+        field="score_difference",
+        output_dir=plots_dir,
+        plot_window=plot_window,
+        is_float=True,
+    )
+    plot_all_field_plots(
+        history=learner.train_history,
+        field="duration",
+        output_dir=plots_dir,
+        plot_window=plot_window,
+    )
+    plot_all_field_plots(
+        history=learner.train_history,
+        field="reward",
+        output_dir=plots_dir,
+        plot_window=plot_window,
+        is_float=True,
+    )
+    plot_all_field_plots(
+        history=learner.train_history,
+        field="actor_loss",
+        output_dir=plots_dir,
+        plot_window=plot_window,
+        is_float=True,
+    )
+    plot_all_field_plots(
+        history=learner.train_history,
+        field="critic_loss",
+        output_dir=plots_dir,
+        plot_window=plot_window,
+        is_float=True,
+    )
+    click.echo("Done!")
 
 
 if __name__ == '__main__':
