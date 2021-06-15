@@ -151,6 +151,7 @@ class BallSortLearner:
         self.game.reset()
         self.update_noise()
         episodic_reward = 0
+        model_update_skips = 0
         initial_score = self.game.score
         actor_losses = []
         critic_losses = []
@@ -169,6 +170,8 @@ class BallSortLearner:
 
             if critic_loss < self.critic_loss_limit:
                 self.update_models()
+            else:
+                model_update_skips += 1
 
             # End this episode when `done` is True
             if done:
@@ -182,6 +185,7 @@ class BallSortLearner:
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
+            model_update_skips=model_update_skips,
         )
 
     def policy(self, state):
