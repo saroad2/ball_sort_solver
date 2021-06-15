@@ -39,14 +39,8 @@ class BallSortGame:
     @property
     def score(self):
         scores_sum = 0
-        for stack in self.stacks:
-            if len(stack) == 0:
-                continue
-            i = 0
-            while i + 1 < len(stack) and stack[i + 1] == stack[0]:
-                i += 1
-            if i >= 1:
-                scores_sum += np.power(self.score_base, i - 1)
+        for i in range(self.stacks_number):
+            scores_sum += self.stack_score(i)
         return scores_sum
 
     @property
@@ -57,11 +51,32 @@ class BallSortGame:
         ]
         return len(completed_stacks) == self.balls_colors_number
 
+    @property
+    def max_stack_score(self):
+        return np.power(self.score_base, self.stack_capacity - 1)
+
+    @property
+    def max_score(self):
+        return self.balls_colors_number * self.max_stack_score
+
     def stack_size(self, stack_index):
         return len(self.stacks[stack_index])
 
     def stack_remaining_space(self, stack_index):
         return self.stack_capacity - self.stack_size(stack_index)
+
+    def stack_score(self, stack_index):
+        if self.stack_size(stack_index) == 0:
+            return 0
+        i = 0
+        while (
+            i + 1 < self.stack_size(stack_index)
+            and self.stacks[stack_index][i + 1] == self.bottom_ball(stack_index)
+        ):
+            i += 1
+        if i == 0:
+            return 0
+        return np.power(self.score_base, i)
 
     def stack_completed(self, stack_index):
         if self.stack_remaining_space(stack_index) != 0:
@@ -70,6 +85,11 @@ class BallSortGame:
             self.stacks[stack_index][i] == self.stacks[stack_index][0]
             for i in range(self.stack_capacity)
         )
+
+    def bottom_ball(self, stack_index):
+        if self.stack_size(stack_index) == 0:
+            return None
+        return self.stacks[stack_index][0]
 
     def top_ball(self, stack_index):
         if self.stack_size(stack_index) == 0:
