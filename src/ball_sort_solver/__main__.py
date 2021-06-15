@@ -84,11 +84,9 @@ def train_ball_sort(configuration, output_dir):
     train_config = config_dict["train"]
     episodes = train_config["episodes"]
     plot_window = train_config["plot_window"]
-    model_update_rate = train_config["model_update_rate"]
-    tau = train_config["tau"]
     with click.progressbar(length=episodes, show_pos=True, show_percent=False) as bar:
         try:
-            for i in bar:
+            for _ in bar:
                 learner.run_episode()
                 bar.label = (
                     f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
@@ -96,11 +94,8 @@ def train_ball_sort(configuration, output_dir):
                     f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
                     f"Score diff: {learner.recent_score_difference_mean(plot_window):.2f}, "
                     f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2e}, "
-                    f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}, "
-                    f"Model age: {learner.model_age}"
+                    f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}"
                 )
-                if i % model_update_rate == 0:
-                    learner.update_models(tau=tau)
         except KeyboardInterrupt:
             click.echo()
             if not click.confirm(
