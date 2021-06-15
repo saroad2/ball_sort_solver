@@ -12,7 +12,6 @@ class BallSortGame:
         score_base: float,
         won_reward: float,
         score_gain_reward: float,
-        score_loss_penalty: float,
         score_change_rate: float,
         illegal_move_loss: float,
         move_loss: float,
@@ -23,14 +22,14 @@ class BallSortGame:
         self.score_base = score_base
         self.won_reward = won_reward
         self.score_gain_reward = score_gain_reward
-        self.score_loss_penalty = score_loss_penalty
         self.score_change_rate = score_change_rate
         self.illegal_move_loss = illegal_move_loss
         self.move_loss = move_loss
 
         self.stacks = [deque() for _ in range(balls_colors_number + extra_stacks)]
         self.duration = 0
-        self.fill_stacks()
+        self.max_score = 0
+        self.reset()
 
     @property
     def stacks_number(self):
@@ -56,7 +55,7 @@ class BallSortGame:
         return np.power(self.score_base, self.stack_capacity - 1)
 
     @property
-    def max_score(self):
+    def max_possible_score(self):
         return self.balls_colors_number * self.max_stack_score
 
     def stack_size(self, stack_index):
@@ -97,17 +96,20 @@ class BallSortGame:
         return self.stacks[stack_index][-1]
 
     def move(self, from_index, to_index):
-        prev_score = self.score
         if not self.is_legal_move(from_index=from_index, to_index=to_index):
             return -self.illegal_move_loss, True
         self.duration += 1
         self.stacks[to_index].append(self.stacks[from_index].pop())
         if self.won:
             return self.won_reward, True
-        reward = self.move_reward(
-            current_score=self.score, prev_score=prev_score
-        )
-        return reward, False
+        if self.score > self.max_score:
+            score_diff = self.score - self.max_score
+            self.max_score = self.score
+            return (
+                self.score_gain_reward * np.exp(self.score_change_rate * score_diff),
+                False,
+            )
+        return -self.move_loss, False
 
     def is_legal_move(self, from_index, to_index):
         moved_ball = self.top_ball(from_index)
@@ -119,17 +121,6 @@ class BallSortGame:
         if to_top_ball is not None and to_top_ball != moved_ball:
             return False
         return True
-
-    def move_reward(self, current_score, prev_score):
-        if current_score > prev_score:
-            return self.score_gain_reward * np.exp(
-                self.score_change_rate * (current_score - prev_score)
-            )
-        if current_score < prev_score:
-            return -self.score_loss_penalty * np.exp(
-                self.score_change_rate * (prev_score - current_score)
-            )
-        return -self.move_loss
 
     def fill_stacks(self):
         remaining_balls = {
@@ -149,6 +140,7 @@ class BallSortGame:
         for stack in self.stacks:
             stack.clear()
         self.fill_stacks()
+        self.max_score = self.score
 
     def __repr__(self):
         return "\n".join(f"\t{i}) {list(stack)}" for i, stack in enumerate(self.stacks))
