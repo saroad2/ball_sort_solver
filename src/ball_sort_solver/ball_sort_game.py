@@ -98,13 +98,7 @@ class BallSortGame:
 
     def move(self, from_index, to_index):
         prev_score = self.score
-        moved_ball = self.top_ball(from_index)
-        if moved_ball is None:
-            return -self.illegal_move_loss, True
-        if self.stack_size(to_index) == self.stack_capacity:
-            return -self.illegal_move_loss, True
-        to_top_ball = self.top_ball(to_index)
-        if to_top_ball is not None and to_top_ball != moved_ball:
+        if not self.is_legal_move(from_index=from_index, to_index=to_index):
             return -self.illegal_move_loss, True
         self.duration += 1
         self.stacks[to_index].append(self.stacks[from_index].pop())
@@ -114,6 +108,17 @@ class BallSortGame:
             current_score=self.score, prev_score=prev_score
         )
         return reward, False
+
+    def is_legal_move(self, from_index, to_index):
+        moved_ball = self.top_ball(from_index)
+        if moved_ball is None:
+            return False
+        if self.stack_size(to_index) == self.stack_capacity:
+            return False
+        to_top_ball = self.top_ball(to_index)
+        if to_top_ball is not None and to_top_ball != moved_ball:
+            return False
+        return True
 
     def move_reward(self, current_score, prev_score):
         if current_score > prev_score:
