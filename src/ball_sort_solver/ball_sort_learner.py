@@ -129,6 +129,9 @@ class BallSortLearner:
     def recent_score_difference_mean(self, window):
         return self.recent_field_mean(field="score_difference", window=window)
 
+    def recent_score_span_mean(self, window):
+        return self.recent_field_mean(field="score_span", window=window)
+
     def recent_actor_loss_mean(self, window):
         return self.recent_field_mean(field="actor_loss", window=window)
 
@@ -182,6 +185,7 @@ class BallSortLearner:
             duration=self.game.duration,
             final_score=self.game.score,
             score_difference=self.game.score - initial_score,
+            score_span=self.game.max_score - initial_score,
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
