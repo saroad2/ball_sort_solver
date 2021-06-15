@@ -7,13 +7,12 @@ class BallSortStateGetter:
 
     @classmethod
     def size(cls, game: BallSortGame):
-        return game.stacks_number * game.stack_capacity
+        return game.stacks_number * game.balls_colors_number
 
     @classmethod
     def get_state(cls, game: BallSortGame):
-        state = []
-        for i in range(game.stacks_number):
-            state.extend(game.stacks[i])
-            state.extend([0 for _ in range(game.stack_remaining_space(i))])
-        state = np.array(state)
-        return state / game.balls_colors_number
+        state = np.zeros(shape=(game.stacks_number, game.balls_colors_number))
+        for i, stack in enumerate(game.stacks):
+            for j, color in enumerate(stack, start=1):
+                state[i, color - 1] = j
+        return state.flatten() / game.stack_capacity
