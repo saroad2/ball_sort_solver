@@ -6,9 +6,10 @@
     "score_base": 3,
     "won_reward": 100,
     "score_gain_reward": 1,
+    "score_loss_penalty": 1.2,
     "illegal_move_loss": 5,
     "score_change_rate": 0.001,
-    "move_loss": 0.1
+    "move_loss": 0.01
   },
   "learner": {
     "gamma": 0.9,

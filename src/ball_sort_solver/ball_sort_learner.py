@@ -159,7 +159,7 @@ class BallSortLearner:
         self.update_noise()
         episodic_reward = 0
         model_update_skips = 0
-        initial_score = self.game.score
+        initial_score = max_score = self.game.score
         actor_losses = []
         critic_losses = []
 
@@ -179,6 +179,7 @@ class BallSortLearner:
                 self.update_models()
             else:
                 model_update_skips += 1
+            max_score = max(max_score, self.game.score)
 
             # End this episode when `done` is True
             if done:
@@ -189,7 +190,7 @@ class BallSortLearner:
             duration=self.game.duration,
             final_score=self.game.score,
             score_difference=self.game.score - initial_score,
-            score_span=self.game.max_score - initial_score,
+            score_span=max_score - initial_score,
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
