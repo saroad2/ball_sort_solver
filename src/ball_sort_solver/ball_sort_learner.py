@@ -47,8 +47,11 @@ class BallSortLearner:
 
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
-        if self.logs_dir is not None:
-            self.writer = tf.summary.create_file_writer(str(self.logs_dir))
+        self.writer = (
+            tf.summary.create_file_writer(str(self.logs_dir))
+            if self.logs_dir is not None
+            else None
+        )
 
         self.actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,

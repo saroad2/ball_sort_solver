@@ -1,13 +1,38 @@
 import json
 import shutil
 from pathlib import Path
-
+import numpy as np
 import click
 
 from ball_sort_solver.ball_sort_game import BallSortGame
 from ball_sort_solver.ball_sort_learner import BallSortLearner
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
 from ball_sort_solver.plot_util import plot_all_field_plots
+
+
+def learner_choose_move(learner):
+    prev_state = learner.state_getter.get_state(learner.game)
+    action = learner.policy(prev_state)
+
+    return np.argmin(action), np.argmax(action)
+
+
+def player_choose_move():
+    from_index = click.prompt("From index", type=int)
+    to_index = click.prompt("To index", type=int)
+    return from_index, to_index
+
+
+def play_game(game, choose_move_method):
+    done = False
+    rewards_sum = 0
+    while not done:
+        click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
+        click.echo(game)
+        from_index, to_index = choose_move_method()
+        reward, done = game.move(from_index, to_index)
+        rewards_sum += reward
+    return rewards_sum
 
 
 @click.group()
@@ -31,15 +56,52 @@ def play_ball_sort(configuration):
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
     game = BallSortGame(**config_dict["game"])
-    done = False
-    rewards_sum = 0
-    while not done:
-        click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
-        click.echo(game)
-        from_index = click.prompt("From index", type=int)
-        to_index = click.prompt("To index", type=int)
-        reward, done = game.move(from_index, to_index)
-        rewards_sum += reward
+    rewards_sum = play_game(game=game, choose_move_method=player_choose_move)
+    if game.won:
+        click.echo("Game won!")
+    else:
+        click.echo("Game lost...")
+    click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
+
+
+@ball_sort_solver_cli.command("auto-play")
+@click.option(
+    "-c", "--configuration",
+    type=click.Path(dir_okay=False, exists=True),
+)
+@click.option(
+    "-m", "--model-dir",
+    type=click.Path(file_okay=False, exists=True),
+    required=True,
+)
+def auto_play_ball_sort(configuration, model_dir):
+    configuration = (
+        Path(configuration)
+        if configuration is not None
+        else Path.cwd() / "configuration.json"
+    )
+    with open(configuration, mode="r") as fd:
+        config_dict = json.load(fd)
+    game = BallSortGame(**config_dict["game"])
+    state_getter = BallSortStateGetter()
+    learner = BallSortLearner(
+        game=game,
+        state_getter=state_getter,
+        logs_dir=None,
+        checkpoints_dir=Path(model_dir),
+        **config_dict["learner"]
+    )
+    click.echo("Warmup....")
+    with click.progressbar(length=200, show_pos=False, show_percent=False) as bar:
+        for _ in bar:
+            learner.run_episode()
+    click.echo("Done!")
+    game.reset()
+    learner.load_models()
+    rewards_sum = play_game(
+        game=game,
+        choose_move_method=lambda: learner_choose_move(learner)
+    )
     if game.won:
         click.echo("Game won!")
     else:
