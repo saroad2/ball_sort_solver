@@ -109,6 +109,8 @@ class BallSortGame:
         return reward, False
 
     def is_legal_move(self, from_index, to_index):
+        if from_index == to_index:
+            return False
         moved_ball = self.top_ball(from_index)
         if moved_ball is None:
             return False
