@@ -47,6 +47,11 @@ class BallSortLearner:
 
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
+        if checkpoints_dir is not None:
+            self.actor_checkpoint = self.checkpoints_dir / "actor_ddpg"
+            self.critic_checkpoint = self.checkpoints_dir / "critic_ddpg"
+            self.target_actor_checkpoint = self.checkpoints_dir / "target_actor_ddpg"
+            self.target_critic_checkpoint = self.checkpoints_dir / "target_critic_ddpg"
         self.writer = (
             tf.summary.create_file_writer(str(self.logs_dir))
             if self.logs_dir is not None
@@ -57,13 +62,11 @@ class BallSortLearner:
             inner_layers_neurons=actor_inner_layer_neurons,
             dropout_rate=actor_dropout_rate,
             action_size=self.actions_size,
-            chkpt_dir=self.checkpoints_dir,
             name="actor",
         )
         self.critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
             dropout_rate=critic_dropout_rate,
-            chkpt_dir=self.checkpoints_dir,
             name="critic",
         )
 
@@ -71,13 +74,11 @@ class BallSortLearner:
             inner_layers_neurons=actor_inner_layer_neurons,
             dropout_rate=actor_dropout_rate,
             action_size=self.actions_size,
-            chkpt_dir=self.checkpoints_dir,
             name="target_actor",
         )
         self.target_critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
             dropout_rate=critic_dropout_rate,
-            chkpt_dir=self.checkpoints_dir,
             name="target_critic",
         )
 
@@ -238,9 +239,14 @@ class BallSortLearner:
 
         with tf.GradientTape() as tape:
             target_actions = self.target_actor(states_)
-            critic_value_ = tf.squeeze(self.target_critic(
-                states_, target_actions), 1)
-            critic_value = tf.squeeze(self.critic(states, actions), 1)
+            critic_value_ = tf.squeeze(
+                self.target_critic(tf.concat([states_, target_actions], axis=1)),
+                1
+            )
+            critic_value = tf.squeeze(
+                self.critic(tf.concat([states, actions], axis=1)),
+                1
+            )
             target = reward + self.gamma * critic_value_ * (1 - done)
             critic_loss = tf.keras.losses.MSE(target, critic_value)
 
@@ -251,7 +257,9 @@ class BallSortLearner:
 
         with tf.GradientTape() as tape:
             new_policy_actions = self.actor(states)
-            actor_loss = -self.critic(states, new_policy_actions)
+            actor_loss = -self.critic(
+                tf.concat([states, new_policy_actions], axis=1)
+            )
             actor_loss = tf.math.reduce_mean(actor_loss)
 
         actor_network_gradient = tape.gradient(actor_loss,
@@ -270,13 +278,24 @@ class BallSortLearner:
                 tf.summary.scalar(name=key, data=value, step=index)
 
     def save_models(self):
-        self.actor.save_weights(self.actor.checkpoint_file)
-        self.target_actor.save_weights(self.target_actor.checkpoint_file)
-        self.critic.save_weights(self.critic.checkpoint_file)
-        self.target_critic.save_weights(self.target_critic.checkpoint_file)
+        self.actor.save(str(self.actor_checkpoint))
+        self.target_actor.save(str(self.target_actor_checkpoint))
+
+        self.critic.save(str(self.critic_checkpoint))
+        self.target_critic.save(str(self.target_critic_checkpoint))
 
     def load_models(self):
-        self.actor.load_weights(self.actor.checkpoint_file)
-        self.target_actor.load_weights(self.target_actor.checkpoint_file)
-        self.critic.load_weights(self.critic.checkpoint_file)
-        self.target_critic.load_weights(self.target_critic.checkpoint_file)
+        self.actor = tf.keras.models.load_model(
+            self.actor_checkpoint, custom_objects={"ActorNetwork": ActorNetwork}
+        )
+        self.target_actor = tf.keras.models.load_model(
+            self.target_actor_checkpoint, custom_objects={"ActorNetwork": ActorNetwork}
+        )
+
+        self.critic = tf.keras.models.load_model(
+            self.critic_checkpoint, custom_objects={"CriticNetwork": CriticNetwork}
+        )
+        self.target_critic = tf.keras.models.load_model(
+            self.target_critic_checkpoint,
+            custom_objects={"CriticNetwork": CriticNetwork},
+        )

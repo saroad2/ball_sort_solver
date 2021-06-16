@@ -91,12 +91,6 @@ def auto_play_ball_sort(configuration, model_dir):
         checkpoints_dir=Path(model_dir),
         **config_dict["learner"]
     )
-    click.echo("Warmup....")
-    with click.progressbar(length=200, show_pos=False, show_percent=False) as bar:
-        for _ in bar:
-            learner.run_episode()
-    click.echo("Done!")
-    game.reset()
     learner.load_models()
     rewards_sum = play_game(
         game=game,
