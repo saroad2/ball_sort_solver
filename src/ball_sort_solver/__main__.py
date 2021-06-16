@@ -70,6 +70,7 @@ def train_ball_sort(configuration, output_dir):
         logs_dir = output_dir / "logs"
         checkpoints_dir = output_dir / "checkpoints"
         plots_dir = output_dir / "plots"
+        checkpoints_dir.mkdir()
         plots_dir.mkdir()
     else:
         logs_dir = None
@@ -113,6 +114,9 @@ def train_ball_sort(configuration, output_dir):
 
     if plots_dir is None:
         return
+    click.echo("Saving Models...")
+    learner.save_models()
+    click.echo("Done!")
     click.echo("Saving plots...")
     plot_all_field_plots(
         history=learner.train_history,

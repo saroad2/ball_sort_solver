@@ -54,12 +54,14 @@ class BallSortLearner:
             inner_layers_neurons=actor_inner_layer_neurons,
             dropout_rate=actor_dropout_rate,
             action_size=self.actions_size,
-            chkpt_dir=self.checkpoints_dir
+            chkpt_dir=self.checkpoints_dir,
+            name="actor",
         )
         self.critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
             dropout_rate=critic_dropout_rate,
             chkpt_dir=self.checkpoints_dir,
+            name="critic",
         )
 
         self.target_actor = ActorNetwork(
@@ -67,11 +69,13 @@ class BallSortLearner:
             dropout_rate=actor_dropout_rate,
             action_size=self.actions_size,
             chkpt_dir=self.checkpoints_dir,
+            name="target_actor",
         )
         self.target_critic = CriticNetwork(
             inner_layers_neurons=critic_inner_layer_neurons,
             dropout_rate=critic_dropout_rate,
             chkpt_dir=self.checkpoints_dir,
+            name="target_critic",
         )
 
         self.actor.compile(
@@ -260,3 +264,15 @@ class BallSortLearner:
         with self.writer.as_default():
             for key, value in kwargs.items():
                 tf.summary.scalar(name=key, data=value, step=index)
+
+    def save_models(self):
+        self.actor.save_weights(self.actor.checkpoint_file)
+        self.target_actor.save_weights(self.target_actor.checkpoint_file)
+        self.critic.save_weights(self.critic.checkpoint_file)
+        self.target_critic.save_weights(self.target_critic.checkpoint_file)
+
+    def load_models(self):
+        self.actor.load_weights(self.actor.checkpoint_file)
+        self.target_actor.load_weights(self.target_actor.checkpoint_file)
+        self.critic.load_weights(self.critic.checkpoint_file)
+        self.target_critic.load_weights(self.target_critic.checkpoint_file)
