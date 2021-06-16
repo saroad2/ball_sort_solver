@@ -31,7 +31,8 @@ class BallSortLearner:
         critic_inner_layer_neurons: int,
         critic_dropout_rate: float,
         critic_loss_limit: float,
-        output_dir: Optional[Path]
+        logs_dir: Optional[Path] = None,
+        checkpoints_dir: Optional[Path] = None,
     ):
         self.game = game
         self.state_getter = state_getter
@@ -44,14 +45,10 @@ class BallSortLearner:
         self.max_duration = max_duration
         self.critic_loss_limit = critic_loss_limit
 
-        self.output_dir = output_dir
-        if self.output_dir is not None:
-            self.logs_dir = output_dir / "logs"
-            self.checkpoints_dir = output_dir / "checkpoints"
+        self.logs_dir = logs_dir
+        self.checkpoints_dir = checkpoints_dir
+        if self.logs_dir is not None:
             self.writer = tf.summary.create_file_writer(str(self.logs_dir))
-        else:
-            self.logs_dir = None
-            self.checkpoints_dir = None
 
         self.actor = ActorNetwork(
             inner_layers_neurons=actor_inner_layer_neurons,

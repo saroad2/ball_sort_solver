@@ -67,9 +67,13 @@ def train_ball_sort(configuration, output_dir):
         if output_dir.exists():
             shutil.rmtree(output_dir)
         output_dir.mkdir(exist_ok=True, parents=True)
+        logs_dir = output_dir / "logs"
+        checkpoints_dir = output_dir / "checkpoints"
         plots_dir = output_dir / "plots"
         plots_dir.mkdir()
     else:
+        logs_dir = None
+        checkpoints_dir = None
         plots_dir = None
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
@@ -78,7 +82,8 @@ def train_ball_sort(configuration, output_dir):
     learner = BallSortLearner(
         game=game,
         state_getter=state_getter,
-        output_dir=output_dir,
+        logs_dir=logs_dir,
+        checkpoints_dir=checkpoints_dir,
         **config_dict["learner"]
     )
     train_config = config_dict["train"]
