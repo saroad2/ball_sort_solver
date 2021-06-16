@@ -9,6 +9,8 @@ from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
 from ball_sort_solver.buffer import ReplayBuffer
 from ball_sort_solver.networks import ActorNetwork, CriticNetwork
 
+EPSILON = 1e-5
+
 
 class BallSortLearner:
 
@@ -206,11 +208,19 @@ class BallSortLearner:
         action = tf.clip_by_value(action, -1, 1)
         return action
 
+    def action_to_move(self, action):
+        from_indices = np.where(action < 0, -action, 0)
+        to_indices = np.where(action > 0, action, 0)
+        return (
+            np.argmax(from_indices),
+            np.argmax(to_indices)
+        )
+
     def make_move(self):
         prev_state = self.state_getter.get_state(self.game)
         action = self.policy(prev_state)
 
-        from_index, to_index = np.argmin(action), np.argmax(action)
+        from_index, to_index = self.action_to_move(action)
         reward, done = self.game.move(from_index=from_index, to_index=to_index)
         current_state = self.state_getter.get_state(self.game)
         return prev_state, action, reward, current_state, done

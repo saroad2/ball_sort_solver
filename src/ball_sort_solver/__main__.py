@@ -12,9 +12,7 @@ from ball_sort_solver.plot_util import plot_all_field_plots
 
 def learner_choose_move(learner):
     prev_state = learner.state_getter.get_state(learner.game)
-    action = learner.policy(prev_state)
-
-    return np.argmin(action), np.argmax(action)
+    return learner.action_to_move(action=learner.policy(prev_state))
 
 
 def player_choose_move():
