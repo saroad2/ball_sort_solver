@@ -28,7 +28,7 @@
     "critic_loss_limit": 10
   },
   "train": {
-    "episodes": 100000,
+    "episodes": 300000,
     "plot_window": 1000
   }
 }
