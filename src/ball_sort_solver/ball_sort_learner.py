@@ -33,6 +33,7 @@ class BallSortLearner:
         critic_learning_rate: int,
         critic_inner_layer_neurons: int,
         critic_dropout_rate: float,
+        scalars_window: int,
         logs_dir: Optional[Path] = None,
         checkpoints_dir: Optional[Path] = None,
     ):
@@ -46,6 +47,7 @@ class BallSortLearner:
         self.noise_decay = noise_decay
         self.min_noise = min_noise
         self.max_duration = max_duration
+        self.scalars_window = scalars_window
 
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
@@ -184,7 +186,9 @@ class BallSortLearner:
             if done:
                 break
 
+        index = len(self.train_history)
         self.save_history(
+            index=index,
             reward=episodic_reward,
             duration=self.game.duration,
             final_score=self.game.score,
@@ -193,6 +197,17 @@ class BallSortLearner:
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
+            save_scalars=True,
+        )
+        self.save_scalars(
+            index=index,
+            recent_score_span_mean=self.recent_score_span_mean(self.scalars_window),
+            recent_score_difference_mean=self.recent_score_difference_mean(
+                self.scalars_window
+            ),
+            recent_final_score_mean=self.recent_final_score_mean(self.scalars_window),
+            recent_duration_mean=self.recent_duration_mean(self.scalars_window),
+            recent_rewards_mean=self.recent_reward_mean(self.scalars_window),
         )
 
     def policy(self, state):
@@ -277,9 +292,12 @@ class BallSortLearner:
             actor_network_gradient, self.actor.trainable_variables))
         return actor_loss, critic_loss
 
-    def save_history(self, **kwargs):
-        index = len(self.train_history)
+    def save_history(self, index, save_scalars=True, **kwargs):
         self.train_history.append(kwargs)
+        if save_scalars:
+            self.save_scalars(index=index, **kwargs)
+
+    def save_scalars(self, index, **kwargs):
         if self.writer is None:
             return
         with self.writer.as_default():

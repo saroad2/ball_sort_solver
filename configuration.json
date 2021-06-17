@@ -26,7 +26,8 @@
     "actor_dropout_rate": 0.1,
     "critic_learning_rate": 0.002,
     "critic_inner_layer_neurons": 512,
-    "critic_dropout_rate": 0.1
+    "critic_dropout_rate": 0.1,
+    "scalars_window": 1000
   },
   "train": {
     "episodes": 300000,
