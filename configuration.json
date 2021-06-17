@@ -4,17 +4,17 @@
     "stack_capacity": 4,
     "extra_stacks": 2,
     "score_base": 3,
-    "won_reward": 100,
+    "won_reward": 10,
     "score_gain_reward": 1,
     "score_loss_penalty": 1.2,
-    "illegal_move_loss": 5,
+    "illegal_move_loss": 1.5,
     "score_change_rate": 0.001,
     "move_loss": 0.01
   },
   "learner": {
     "gamma": 0.9,
     "tau": 0.005,
-    "tau_decay": 0.05,
+    "tau_decay": 0,
     "start_noise": 0.3,
     "noise_decay": 1e-4,
     "min_noise": 0.1,
@@ -32,7 +32,7 @@
     "scalars_window": 1000
   },
   "train": {
-    "episodes": 300000,
+    "episodes": 100000,
     "plot_window": 1000
   }
 }
