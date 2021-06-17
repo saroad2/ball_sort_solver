@@ -166,6 +166,7 @@ class BallSortLearner:
         initial_score = max_score = self.game.score
         actor_losses = []
         critic_losses = []
+        taus = []
 
         while self.game.duration < self.max_duration:
             prev_state, action, reward, current_state, done = self.make_move()
@@ -179,7 +180,9 @@ class BallSortLearner:
             actor_losses.append(actor_loss)
             critic_losses.append(critic_loss)
 
-            self.update_models(self.tau * np.exp(-critic_loss * self.tau_decay))
+            tau = self.tau * np.exp(-critic_loss * self.tau_decay)
+            self.update_models(tau)
+            taus.append(tau)
             max_score = max(max_score, self.game.score)
 
             # End this episode when `done` is True
@@ -197,6 +200,7 @@ class BallSortLearner:
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
+            tau=np.mean(taus),
             save_scalars=True,
         )
         self.save_scalars(
@@ -208,6 +212,8 @@ class BallSortLearner:
             recent_final_score_mean=self.recent_final_score_mean(self.scalars_window),
             recent_duration_mean=self.recent_duration_mean(self.scalars_window),
             recent_rewards_mean=self.recent_reward_mean(self.scalars_window),
+            recent_actor_loss_mean=self.recent_actor_loss_mean(self.scalars_window),
+            recent_critic_loss_mean=self.recent_critic_loss_mean(self.scalars_window),
         )
 
     def policy(self, state):
