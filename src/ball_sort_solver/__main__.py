@@ -12,7 +12,9 @@ from ball_sort_solver.plot_util import plot_all_field_plots
 
 def learner_choose_move(learner):
     prev_state = learner.state_getter.get_state(learner.game)
-    return learner.action_to_move(action=learner.policy(prev_state))
+    from_index, to_index = learner.action_to_move(action=learner.policy(prev_state))
+    click.echo(f"Moving from {from_index} to {to_index}")
+    return from_index, to_index
 
 
 def player_choose_move():
@@ -24,13 +26,15 @@ def player_choose_move():
 def play_game(game, choose_move_method):
     done = False
     rewards_sum = 0
+    moves = 0
     while not done:
+        moves += 1
         click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
         click.echo(game)
         from_index, to_index = choose_move_method()
         reward, done = game.move(from_index, to_index)
         rewards_sum += reward
-    return rewards_sum
+    return moves, rewards_sum
 
 
 @click.group()
@@ -54,12 +58,12 @@ def play_ball_sort(configuration):
     with open(configuration, mode="r") as fd:
         config_dict = json.load(fd)
     game = BallSortGame(**config_dict["game"])
-    rewards_sum = play_game(game=game, choose_move_method=player_choose_move)
+    moves, rewards_sum = play_game(game=game, choose_move_method=player_choose_move)
     if game.won:
         click.echo("Game won!")
     else:
         click.echo("Game lost...")
-    click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
+    click.echo(f"Score: {game.score}, Rewards: {rewards_sum}, Moves: {moves}")
 
 
 @ball_sort_solver_cli.command("auto-play")
@@ -90,7 +94,7 @@ def auto_play_ball_sort(configuration, model_dir):
         **config_dict["learner"]
     )
     learner.load_models()
-    rewards_sum = play_game(
+    moves, rewards_sum = play_game(
         game=game,
         choose_move_method=lambda: learner_choose_move(learner)
     )
@@ -98,7 +102,7 @@ def auto_play_ball_sort(configuration, model_dir):
         click.echo("Game won!")
     else:
         click.echo("Game lost...")
-    click.echo(f"Score: {game.score}, Rewards: {rewards_sum}")
+    click.echo(f"Score: {game.score}, Rewards: {rewards_sum}, Moves: {moves}")
 
 
 @ball_sort_solver_cli.command("train")
