@@ -20,6 +20,7 @@ class BallSortLearner:
         state_getter: BallSortStateGetter,
         gamma: float,
         tau: float,
+        tau_decay: float,
         start_noise: float,
         noise_decay: float,
         min_noise: float,
@@ -32,7 +33,6 @@ class BallSortLearner:
         critic_learning_rate: int,
         critic_inner_layer_neurons: int,
         critic_dropout_rate: float,
-        critic_loss_limit: float,
         logs_dir: Optional[Path] = None,
         checkpoints_dir: Optional[Path] = None,
     ):
@@ -41,11 +41,11 @@ class BallSortLearner:
 
         self.gamma = gamma
         self.tau = tau
+        self.tau_decay = tau_decay
         self.noise = start_noise
         self.noise_decay = noise_decay
         self.min_noise = min_noise
         self.max_duration = max_duration
-        self.critic_loss_limit = critic_loss_limit
 
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
@@ -161,7 +161,6 @@ class BallSortLearner:
         self.game.reset()
         self.update_noise()
         episodic_reward = 0
-        model_update_skips = 0
         initial_score = max_score = self.game.score
         actor_losses = []
         critic_losses = []
@@ -178,10 +177,7 @@ class BallSortLearner:
             actor_losses.append(actor_loss)
             critic_losses.append(critic_loss)
 
-            if critic_loss < self.critic_loss_limit:
-                self.update_models()
-            else:
-                model_update_skips += 1
+            self.update_models(self.tau * np.exp(-critic_loss * self.tau_decay))
             max_score = max(max_score, self.game.score)
 
             # End this episode when `done` is True
@@ -197,7 +193,6 @@ class BallSortLearner:
             actor_loss=np.mean(actor_losses),
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
-            model_update_skips=model_update_skips,
         )
 
     def policy(self, state):
@@ -225,16 +220,20 @@ class BallSortLearner:
         current_state = self.state_getter.get_state(self.game)
         return prev_state, action, reward, current_state, done
 
-    def update_models(self):
-        self.update_model(model=self.actor, target_model=self.target_actor)
-        self.update_model(model=self.critic, target_model=self.target_critic)
+    def update_models(self, tau):
+        if tau < EPSILON:
+            return
+        self.update_model(model=self.actor, target_model=self.target_actor, tau=tau)
+        self.update_model(model=self.critic, target_model=self.target_critic, tau=tau)
         self.model_age += 1
 
-    def update_model(self, model, target_model):
+    def update_model(self, model, target_model, tau=None):
+        if tau is None:
+            tau = self.tau
         model_weights, target_weights = model.get_weights(), target_model.get_weights()
         new_weights = []
         for (a, b) in zip(model_weights, target_weights):
-            new_weights.append(a * self.tau + b * (1 - self.tau))
+            new_weights.append(a * tau + b * (1 - tau))
         target_model.set_weights(new_weights)
 
     def learn(self):

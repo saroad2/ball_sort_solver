@@ -14,6 +14,7 @@
   "learner": {
     "gamma": 0.9,
     "tau": 0.005,
+    "tau_decay": 0.05,
     "start_noise": 0.3,
     "noise_decay": 1e-4,
     "min_noise": 0.1,
@@ -25,8 +26,7 @@
     "actor_dropout_rate": 0.1,
     "critic_learning_rate": 0.002,
     "critic_inner_layer_neurons": 512,
-    "critic_dropout_rate": 0.1,
-    "critic_loss_limit": 100
+    "critic_dropout_rate": 0.1
   },
   "train": {
     "episodes": 300000,
