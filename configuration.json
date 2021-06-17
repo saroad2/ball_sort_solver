@@ -27,6 +27,8 @@
     "critic_learning_rate": 0.002,
     "critic_inner_layer_neurons": 512,
     "critic_dropout_rate": 0.1,
+    "delta_bias": 0.1,
+    "age_decrease_power": 0.05,
     "scalars_window": 1000
   },
   "train": {
