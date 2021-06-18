@@ -8,7 +8,7 @@
     "score_gain_reward": 1,
     "score_loss_penalty": 1.2,
     "illegal_move_loss": 1.5,
-    "score_change_rate": 0.001,
+    "score_change_rate": 0.01,
     "move_loss": 0.01
   },
   "learner": {
