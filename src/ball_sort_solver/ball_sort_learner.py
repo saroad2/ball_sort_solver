@@ -34,8 +34,6 @@ class BallSortLearner:
         critic_inner_layer_neurons: int,
         critic_dropout_rate: float,
         scalars_window: int,
-        delta_bias: float,
-        age_decrease_power: float,
         logs_dir: Optional[Path] = None,
         checkpoints_dir: Optional[Path] = None,
     ):
@@ -50,9 +48,6 @@ class BallSortLearner:
         self.min_noise = min_noise
         self.max_duration = max_duration
         self.scalars_window = scalars_window
-
-        self.delta_bias = delta_bias
-        self.age_decrease_power = age_decrease_power
 
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
@@ -227,7 +222,7 @@ class BallSortLearner:
 
         action = sampled_actions.numpy() + noise
         action = tf.clip_by_value(action, -1, 1)
-        return action.numpy()
+        return action
 
     def action_to_move(self, action):
         from_indices = np.where(action < 0, -action, 0)
@@ -266,9 +261,7 @@ class BallSortLearner:
         if len(self.buffer) < self.buffer.batch_size:
             return 0, 0
 
-        state, action, reward, new_state, done = self.buffer.sample_buffer(
-            p=self.sample_probabilities()
-        )
+        state, action, reward, new_state, done = self.buffer.sample_buffer()
 
         states = tf.convert_to_tensor(state, dtype=tf.float32)
         states_ = tf.convert_to_tensor(new_state, dtype=tf.float32)
@@ -304,35 +297,6 @@ class BallSortLearner:
         self.actor.optimizer.apply_gradients(zip(
             actor_network_gradient, self.actor.trainable_variables))
         return actor_loss, critic_loss
-
-    def delta_values(self):
-        states = tf.convert_to_tensor(self.buffer.current_states, dtype=tf.float32)
-        states_ = tf.convert_to_tensor(self.buffer.new_states, dtype=tf.float32)
-        actions = tf.convert_to_tensor(self.buffer.actions, dtype=tf.float32)
-        target_actions = self.target_actor(states_)
-        critic_value_ = tf.squeeze(
-            self.target_critic(tf.concat([states_, target_actions], axis=1)),
-            1
-        )
-        critic_value = tf.squeeze(
-            self.critic(tf.concat([states, actions], axis=1)),
-            1
-        )
-        target = self.buffer.rewards + self.gamma * critic_value_ * (
-                1 - self.buffer.done
-        )
-        return critic_value - target
-
-    def sample_probabilities(self):
-        delta = self.delta_values()
-        memory_length = len(self.buffer)
-        p = (np.fabs(delta) + self.delta_bias) / np.power(
-            memory_length - np.arange(memory_length),
-            self.age_decrease_power
-        )
-        p /= np.sum(p)
-        return p
-
 
     def save_history(self, index, save_scalars=True, **kwargs):
         self.train_history.append(kwargs)
