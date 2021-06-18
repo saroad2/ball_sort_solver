@@ -157,9 +157,7 @@ def train_ball_sort(configuration, output_dir):
                     f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
                     f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
                     f"Score diff: {learner.recent_score_difference_mean(plot_window):.2f}, "
-                    f"Score span: {learner.recent_score_span_mean(plot_window):.2f}, "
-                    f"Actor loss: {learner.recent_actor_loss_mean(plot_window):.2e}, "
-                    f"Critic loss: {learner.recent_critic_loss_mean(plot_window):.2e}"
+                    f"Score span: {learner.recent_score_span_mean(plot_window):.2f}"
                 )
         except KeyboardInterrupt:
             click.echo()
