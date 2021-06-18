@@ -103,7 +103,7 @@ class BallSortLearner:
         self.target_critic.set_weights(self.critic.get_weights())
 
         self.buffer = ReplayBuffer(
-            memory_size=buffer_capacity,
+            max_size=buffer_capacity,
             batch_size=batch_size,
             state_size=self.state_size,
             action_size=self.actions_size,
@@ -258,7 +258,7 @@ class BallSortLearner:
         target_model.set_weights(new_weights)
 
     def learn(self):
-        if len(self.buffer) < self.buffer.batch_size:
+        if self.buffer.mem_cntr < self.buffer.batch_size:
             return 0, 0
 
         state, action, reward, new_state, done = self.buffer.sample_buffer()
