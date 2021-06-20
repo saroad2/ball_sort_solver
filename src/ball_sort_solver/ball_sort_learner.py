@@ -9,6 +9,7 @@ from ball_sort_solver.ball_sort_mutator import BallSortMutator
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
 from ball_sort_solver.buffer import ReplayBuffer
 from ball_sort_solver.networks import build_network
+from ball_sort_solver.noise import Noise
 
 EPSILON = 1e-5
 
@@ -46,12 +47,15 @@ class BallSortLearner:
         self.gamma = gamma
         self.tau = tau
         self.tau_decay = tau_decay
-        self.noise = start_noise
-        self.noise_decay = noise_decay
-        self.min_noise = min_noise
         self.max_duration = max_duration
         self.scalars_window = scalars_window
 
+        self.noise = Noise(
+            mean=np.zeros(self.actions_size),
+            std_deviation=start_noise,
+            noise_decay=noise_decay,
+            min_noise=min_noise,
+        )
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
         if checkpoints_dir is not None:
@@ -196,13 +200,9 @@ class BallSortLearner:
             field_values = field_values[-window:]
         return np.mean(field_values)
 
-    def update_noise(self):
-        if self.noise > self.min_noise:
-            self.noise *= np.exp(-self.noise_decay)
-
     def run_episode(self):
         self.game.reset()
-        self.update_noise()
+        self.noise.update()
         episodic_reward = 0
         initial_score = max_score = self.game.score
         actor_losses = []
@@ -242,6 +242,7 @@ class BallSortLearner:
             critic_loss=np.mean(critic_losses),
             model_age=self.model_age,
             tau=np.mean(taus),
+            noise=self.noise.std_dev,
             save_scalars=True,
         )
         self.save_scalars(
@@ -259,9 +260,7 @@ class BallSortLearner:
 
     def policy(self, state):
         sampled_actions = tf.squeeze(self.actor(state.reshape(-1, *state.shape)))
-        noise = np.random.normal(scale=self.noise, size=(self.actions_size,))
-
-        action = sampled_actions.numpy() + noise
+        action = sampled_actions.numpy() + self.noise()
         action = tf.clip_by_value(action, -1, 1)
         return action
 
