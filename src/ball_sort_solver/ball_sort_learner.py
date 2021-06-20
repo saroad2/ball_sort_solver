@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from ball_sort_solver.ball_sort_game import BallSortGame
+from ball_sort_solver.ball_sort_mutator import BallSortMutator
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
 from ball_sort_solver.buffer import ReplayBuffer
 from ball_sort_solver.networks import ActorNetwork, CriticNetwork
@@ -263,9 +264,18 @@ class BallSortLearner:
 
         state, action, reward, new_state, done = self.buffer.sample_buffer()
 
-        states = tf.convert_to_tensor(state, dtype=tf.float32)
-        states_ = tf.convert_to_tensor(new_state, dtype=tf.float32)
-        actions = tf.convert_to_tensor(action, dtype=tf.float32)
+        mutator = BallSortMutator(
+            stacks_number=self.game.stacks_number,
+            balls_colors_number=self.game.balls_colors_number
+        )
+
+        states = mutator.mutate_state(state)
+        states_ = mutator.mutate_state(new_state)
+        actions = mutator.mutate_action(action)
+
+        states = tf.convert_to_tensor(states, dtype=tf.float32)
+        states_ = tf.convert_to_tensor(states_, dtype=tf.float32)
+        actions = tf.convert_to_tensor(actions, dtype=tf.float32)
 
         with tf.GradientTape() as tape:
             target_actions = self.target_actor(states_)
