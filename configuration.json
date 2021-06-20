@@ -30,7 +30,7 @@
     "scalars_window": 1000
   },
   "train": {
-    "episodes": 100000,
+    "episodes": 300000,
     "plot_window": 1000
   }
 }
