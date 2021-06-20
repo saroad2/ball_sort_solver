@@ -8,7 +8,7 @@ from ball_sort_solver.ball_sort_game import BallSortGame
 from ball_sort_solver.ball_sort_mutator import BallSortMutator
 from ball_sort_solver.ball_sort_state_getter import BallSortStateGetter
 from ball_sort_solver.buffer import ReplayBuffer
-from ball_sort_solver.networks import ActorNetwork, CriticNetwork
+from ball_sort_solver.networks import build_network
 
 EPSILON = 1e-5
 
@@ -29,10 +29,12 @@ class BallSortLearner:
         buffer_capacity: int,
         batch_size: int,
         actor_learning_rate: int,
-        actor_inner_layer_neurons: int,
+        actor_inner_layers_neurons: int,
+        actor_inner_layers: int,
         actor_dropout_rate: float,
         critic_learning_rate: int,
-        critic_inner_layer_neurons: int,
+        critic_inner_layers_neurons: int,
+        critic_inner_layers: int,
         critic_dropout_rate: float,
         scalars_window: int,
         logs_dir: Optional[Path] = None,
@@ -53,38 +55,40 @@ class BallSortLearner:
         self.logs_dir = logs_dir
         self.checkpoints_dir = checkpoints_dir
         if checkpoints_dir is not None:
-            self.actor_checkpoint = self.checkpoints_dir / "actor_ddpg"
-            self.critic_checkpoint = self.checkpoints_dir / "critic_ddpg"
-            self.target_actor_checkpoint = self.checkpoints_dir / "target_actor_ddpg"
-            self.target_critic_checkpoint = self.checkpoints_dir / "target_critic_ddpg"
+            self.actor_checkpoint = self.checkpoints_dir / "actor_ddpg.h5"
+            self.critic_checkpoint = self.checkpoints_dir / "critic_ddpg.h5"
+            self.target_actor_checkpoint = self.checkpoints_dir / "target_actor_ddpg.h5"
+            self.target_critic_checkpoint = self.checkpoints_dir / "target_critic_ddpg.h5"
         self.writer = (
             tf.summary.create_file_writer(str(self.logs_dir))
             if self.logs_dir is not None
             else None
         )
 
-        self.actor = ActorNetwork(
-            inner_layers_neurons=actor_inner_layer_neurons,
+        self.actor = self.build_actor_model(
             dropout_rate=actor_dropout_rate,
-            action_size=self.actions_size,
-            name="actor",
+            inner_layers_neurons=actor_inner_layers_neurons,
+            inner_layers=actor_inner_layers,
+            name="actor"
         )
-        self.critic = CriticNetwork(
-            inner_layers_neurons=critic_inner_layer_neurons,
+        self.critic = self.build_critic_model(
             dropout_rate=critic_dropout_rate,
+            inner_layers_neurons=critic_inner_layers_neurons,
+            inner_layers=critic_inner_layers,
             name="critic",
         )
 
-        self.target_actor = ActorNetwork(
-            inner_layers_neurons=actor_inner_layer_neurons,
+        self.target_actor = self.build_actor_model(
             dropout_rate=actor_dropout_rate,
-            action_size=self.actions_size,
-            name="target_actor",
+            inner_layers_neurons=actor_inner_layers_neurons,
+            inner_layers=actor_inner_layers,
+            name="target_actor"
         )
-        self.target_critic = CriticNetwork(
-            inner_layers_neurons=critic_inner_layer_neurons,
+        self.target_critic = self.build_critic_model(
             dropout_rate=critic_dropout_rate,
-            name="target_critic",
+            inner_layers_neurons=critic_inner_layers_neurons,
+            inner_layers=critic_inner_layers,
+            name="critic",
         )
 
         self.actor.compile(
@@ -112,6 +116,42 @@ class BallSortLearner:
 
         self.model_age = 0
         self.train_history = []
+
+    def build_actor_model(
+        self,
+        dropout_rate,
+        inner_layers_neurons,
+        inner_layers,
+        name,
+    ):
+        return build_network(
+            input_size=self.state_size,
+            inner_layers_neurons=inner_layers_neurons,
+            dropout_rate=dropout_rate,
+            inner_layers=inner_layers,
+            inner_activation="relu",
+            output_size=self.actions_size,
+            output_activation="tanh",
+            name=name,
+        )
+
+    def build_critic_model(
+        self,
+        dropout_rate,
+        inner_layers_neurons,
+        inner_layers,
+        name,
+    ):
+        return build_network(
+            input_size=self.state_size + self.actions_size,
+            inner_layers_neurons=inner_layers_neurons,
+            dropout_rate=dropout_rate,
+            inner_layers=inner_layers,
+            inner_activation="relu",
+            output_size=1,
+            output_activation=None,
+            name=name,
+        )
 
     @property
     def state_size(self):
@@ -321,24 +361,15 @@ class BallSortLearner:
                 tf.summary.scalar(name=key, data=value, step=index)
 
     def save_models(self):
-        self.actor.save(str(self.actor_checkpoint))
-        self.target_actor.save(str(self.target_actor_checkpoint))
+        self.actor.save_weights(str(self.actor_checkpoint))
+        self.target_actor.save_weights(str(self.target_actor_checkpoint))
 
-        self.critic.save(str(self.critic_checkpoint))
-        self.target_critic.save(str(self.target_critic_checkpoint))
+        self.critic.save_weights(str(self.critic_checkpoint))
+        self.target_critic.save_weights(str(self.target_critic_checkpoint))
 
     def load_models(self):
-        self.actor = tf.keras.models.load_model(
-            self.actor_checkpoint, custom_objects={"ActorNetwork": ActorNetwork}
-        )
-        self.target_actor = tf.keras.models.load_model(
-            self.target_actor_checkpoint, custom_objects={"ActorNetwork": ActorNetwork}
-        )
+        self.actor.load_weights(str(self.actor_checkpoint))
+        self.target_actor.load_weights(str(self.target_actor_checkpoint))
 
-        self.critic = tf.keras.models.load_model(
-            self.critic_checkpoint, custom_objects={"CriticNetwork": CriticNetwork}
-        )
-        self.target_critic = tf.keras.models.load_model(
-            self.target_critic_checkpoint,
-            custom_objects={"CriticNetwork": CriticNetwork},
-        )
+        self.critic.load_weights(str(self.critic_checkpoint))
+        self.target_critic.load_weights(str(self.target_critic_checkpoint))
