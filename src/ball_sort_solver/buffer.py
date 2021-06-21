@@ -2,18 +2,21 @@ import numpy as np
 
 
 class ReplayBuffer:
-    def __init__(self, max_size, batch_size, state_size, action_size):
-        self.mem_size = max_size
+    def __init__(self, memory_size, batch_size, state_size):
+        self.memory_size = memory_size
         self.batch_size = batch_size
         self.mem_cntr = 0
-        self.state_memory = np.zeros((self.mem_size, state_size))
-        self.new_state_memory = np.zeros((self.mem_size, state_size))
-        self.action_memory = np.zeros((self.mem_size, action_size))
-        self.reward_memory = np.zeros(self.mem_size)
-        self.terminal_memory = np.zeros(self.mem_size, dtype=np.bool)
+        self.state_memory = np.zeros((self.memory_size, state_size))
+        self.new_state_memory = np.zeros((self.memory_size, state_size))
+        self.action_memory = np.zeros(self.memory_size, dtype=np.int)
+        self.reward_memory = np.zeros(self.memory_size)
+        self.terminal_memory = np.zeros(self.memory_size, dtype=np.bool)
+
+    def __len__(self):
+        return min(self.mem_cntr, self.memory_size)
 
     def store_transition(self, state, action, reward, state_, done):
-        index = self.mem_cntr % self.mem_size
+        index = self.mem_cntr % self.memory_size
 
         self.state_memory[index] = state
         self.new_state_memory[index] = state_
@@ -24,7 +27,7 @@ class ReplayBuffer:
         self.mem_cntr += 1
 
     def sample_buffer(self):
-        max_mem = min(self.mem_cntr, self.mem_size)
+        max_mem = min(self.mem_cntr, self.memory_size)
 
         batch = np.random.choice(max_mem, self.batch_size, replace=False)
 

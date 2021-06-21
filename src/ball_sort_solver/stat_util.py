@@ -13,3 +13,9 @@ def moving_max(values):
 
 def moving_mean(values, n):
     return np.convolve(values, np.ones(n), mode='valid') / n
+
+
+def safe_mean(values):
+    if len(values) == 0:
+        return 0
+    return np.mean(values)

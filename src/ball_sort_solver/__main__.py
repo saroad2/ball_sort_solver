@@ -1,7 +1,6 @@
 import json
 import shutil
 from pathlib import Path
-import numpy as np
 import click
 
 from ball_sort_solver.ball_sort_game import BallSortGame
@@ -90,10 +89,9 @@ def auto_play_ball_sort(configuration, model_dir):
         game=game,
         state_getter=state_getter,
         logs_dir=None,
-        checkpoints_dir=Path(model_dir),
         **config_dict["learner"]
     )
-    learner.load_models()
+    learner.load_model(model_dir)
     moves, rewards_sum = play_game(
         game=game,
         choose_move_method=lambda: learner_choose_move(learner)
@@ -142,23 +140,33 @@ def train_ball_sort(configuration, output_dir):
         game=game,
         state_getter=state_getter,
         logs_dir=logs_dir,
-        checkpoints_dir=checkpoints_dir,
         **config_dict["learner"]
     )
     train_config = config_dict["train"]
     episodes = train_config["episodes"]
     plot_window = train_config["plot_window"]
+    model_update_rate = train_config["model_update_rate"]
+    epsilon_update_start = train_config["epsilon_update_start"]
     with click.progressbar(length=episodes, show_pos=True, show_percent=False) as bar:
         try:
-            for _ in bar:
+            for i in bar:
+                if i > epsilon_update_start:
+                    learner.update_epsilon()
                 learner.run_episode()
+                score_diff = learner.recent_score_difference_mean(plot_window)
+                score_span = learner.recent_score_span_mean(plot_window)
                 bar.label = (
-                    f"Rewards: {learner.recent_reward_mean(plot_window):.2f}, "
+                    f"Rewards: {learner.recent_rewards_mean(plot_window):.2f}, "
                     f"Duration: {learner.recent_duration_mean(plot_window):.2f}, "
-                    f"Final score: {learner.recent_final_score_mean(plot_window):.2f}, "
-                    f"Score diff: {learner.recent_score_difference_mean(plot_window):.2f}, "
-                    f"Score span: {learner.recent_score_span_mean(plot_window):.2f}"
+                    f"Score: {learner.recent_score_mean(plot_window):.2f}, "
+                    f"Score diff/span: {score_diff:.2f}/{score_span:.2f}, "
+                    f"Loss: {learner.recent_loss_mean(plot_window):.2e}, "
+                    f"Accuracy: {learner.recent_accuracy_mean(plot_window):.2e}, "
+                    f"Epsilon: {learner.epsilon:.2e}, "
+                    f"Model age: {learner.model_age}"
                 )
+                if (i + 1) % model_update_rate == 0:
+                    learner.update_target_model()
         except KeyboardInterrupt:
             click.echo()
             if not click.confirm(
@@ -171,12 +179,12 @@ def train_ball_sort(configuration, output_dir):
     if plots_dir is None:
         return
     click.echo("Saving Models...")
-    learner.save_models()
+    learner.save_model(checkpoints_dir)
     click.echo("Done!")
     click.echo("Saving plots...")
     plot_all_field_plots(
         history=learner.train_history,
-        field="final_score",
+        field="score",
         output_dir=plots_dir,
         plot_window=plot_window,
         is_float=True,
@@ -210,14 +218,14 @@ def train_ball_sort(configuration, output_dir):
     )
     plot_all_field_plots(
         history=learner.train_history,
-        field="actor_loss",
+        field="loss",
         output_dir=plots_dir,
         plot_window=plot_window,
         is_float=True,
     )
     plot_all_field_plots(
         history=learner.train_history,
-        field="critic_loss",
+        field="accuracy",
         output_dir=plots_dir,
         plot_window=plot_window,
         is_float=True,
